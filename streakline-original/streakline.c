@@ -345,8 +345,8 @@ int orbit(double *x0, double *v0, double *x1, double *x2, double *x3, double *v1
 		dostep1(x,v,apar,potential,dt,direction);
 
 		// Record
-		t2n(x, x1, x2, x3, 0);
-		t2n(v, v1, v2, v3, 0);
+		t2n(x, x1, x2, x3, 0); //record initial position at index 0
+		t2n(v, v1, v2, v3, 0); //record vel at t=0.5dt at index 0
 		imin=1;
 	}
 	for(i=imin;i<N;i++){
@@ -361,7 +361,7 @@ int orbit(double *x0, double *v0, double *x1, double *x2, double *x3, double *v1
 
 		// Record
 		t2n(x, x1, x2, x3, N-1);
-		t2n(v, v1, v2, v3, N-1);
+		t2n(v, v1, v2, v3, N-1); //record vel at t=
 	}
 
 	/*
