@@ -473,7 +473,7 @@ void dostep_stream(double *xc, double *x, double *v, double *par, int potential,
 	for(i=0;i<Nstep;i++){
 		// Forward the particle using the leapfrog integrator
 		for(j=0;j<3;j++){
-			xt[j]=x[j]+dts*v[j]; //update position
+			xt[j]=x[j]+dts*v[j]; //update position of particle
 			xr[j]=xc[j]-xt[j]; //xr store position of particle relative to cluster. what is the purpose, its not being used?
 		}
 		force(xt, at, par, potential); //acelerations, based on xt, get stored in at
@@ -770,7 +770,7 @@ void force_plummer(double *x, double *a, double Mcl)
 	int i;
 	double r, raux;
 
-	r=len(x);
+	r=len(x); //magnitude of distance btwn cluster and particle
 	raux=pow(r*r+Rcl*Rcl, 1.5);
 
 	for(i=0;i<3;i++)
