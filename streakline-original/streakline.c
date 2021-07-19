@@ -3,6 +3,8 @@
 #include "utility.c"
 
 
+double M_sun = 4 * pi *pi;
+
 
 // Simulation parameters
 double Mcli, Mclf, Rcl, dt;
@@ -68,9 +70,9 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 	}
 
 	// Set up actual potential parameters;
-	Napar = par_perpotential[potential];
-	double apar[Napar], apar_aux[11];
-	initpar(potential, par, apar);
+	Napar = par_perpotential[potential]; //index 0 in array par_potential = 1 (parameters per potential?)
+	double apar[Napar], apar_aux[11]; //array called apar of size 1, array called apar_aux of size 11
+	initpar(potential, par, apar); //(0,input parameter, )
 
     if(potential==6){
         for(i=0;i<11;i++)
@@ -165,6 +167,8 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 
 		// Update output arrays
 		t2n(x, xc1, xc2, xc3, 0); //fill array xc1, xc2, xc3: xc1[0] = x[0], xc2[0] = x[1], xc3[0]=x[2]. Update array xc1, xc2, and xc3, which will store all the positions of the cluster at each timestel?
+
+/*
 		Rj[k]=jacobi(x, v, apar, potential, Mcl);	// Jacobi radius
 		r=len(x); //distance of cluster from origin
 		rm=(r-Rj[k])/r;
@@ -197,6 +201,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		vp1[k]=v[0]*vtrail + dvt[k]*x[0];
 		vp2[k]=v[1]*vtrail + dvt[k]*x[1];
 		vp3[k]=v[2]*vtrail + dvt[k]*x[2];
+		*/
 		k++;
 
         time = time + dt*sign;
@@ -241,6 +246,8 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		}
 
 		if(i%M==0){
+/*
+
 			// Release only at every Mth timestep
 			// Jacobi tidal radius
 			Rj[k]=jacobi(x, v, apar, potential, Mcl);
@@ -277,6 +284,8 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 			vp1[k]=v[0]*vtrail + dvt[k]*x[0];
 			vp2[k]=v[1]*vtrail + dvt[k]*x[1];
 			vp3[k]=v[2]*vtrail + dvt[k]*x[2];
+
+*/
 			k++;
 		}
 
@@ -319,9 +328,11 @@ int orbit(double *x0, double *v0, double *x1, double *x2, double *x3, double *v1
 	t2t(v0, v);
 
     // Set up actual potential parameters;
-    Napar = par_perpotential[potential];
-	double apar[Napar];
-	initpar(potential, par, apar);
+    //Napar = par_perpotential[potential];
+	//double apar[Napar];
+	//initpar(potential, par, apar);
+
+
 
 	// Integrator switch
 	void (*pt2dostep)(double*, double*, double*, int, double, double) = NULL; //is this a function or a variable?
@@ -342,22 +353,24 @@ int orbit(double *x0, double *v0, double *x1, double *x2, double *x3, double *v1
 	// Orbit integration
 
 	if(integrator==0){
-		dostep1(x,v,apar,potential,dt,direction);
+		dostep1(x,v,par,potential,dt,direction);
 
 		// Record
 		t2n(x, x1, x2, x3, 0); //record initial position at index 0
 		t2n(v, v1, v2, v3, 0); //record vel at t=0.5dt at index 0
+		//printf("%f\n",x1[0]);
 		imin=1;
 	}
 	for(i=imin;i<N;i++){
-		(*pt2dostep)(x,v,apar,potential,dt,direction);
+		(*pt2dostep)(x,v,par,potential,dt,direction);
 
 		// Record
 		t2n(x, x1, x2, x3, i);
 		t2n(v, v1, v2, v3, i);
+		//printf("%f\n",x1[i]);
 	}
 	if(integrator==0){
-		dostep1(x,v,apar,potential,dt,direction);
+		dostep1(x,v,par,potential,dt,-1.);
 
 		// Record
 		t2n(x, x1, x2, x3, N-1);
@@ -392,6 +405,7 @@ void dostep(double *x, double *v, double *par, int potential, double deltat, dou
 			xt[j]=x[j]+dts*v[j];
 		force(xt, at, par, potential);
 
+
         for(j=0;j<3;j++)
 			vt[j]=v[j]+dts*at[j];
 
@@ -411,6 +425,7 @@ void dostep1(double *x, double *v, double *par, int potential, double deltat, do
 
 	dts=sign*dt;
 	force(x, a, par, potential);
+
 
 	v[0]=v[0]+0.5*dts*a[0];
 	v[1]=v[1]+0.5*dts*a[1];
@@ -502,6 +517,7 @@ void force(double *x, double *a, double *par, int potential)
 
 		for(i=0;i<3;i++)
 			a[i]=-par[0]*x[i]/(r*r*r);
+		printf("{%f,%f}", a[0],a[1]);
 
 	}else if(potential==1){
 		// Logarithmic potential, as defined by Koposov et al. (2010)
@@ -769,9 +785,10 @@ void force_plummer(double *x, double *a, double Mcl)
 	// Assumes global definitions of cluster mass Mcl and radius Rcl
 	int i;
 	double r, raux;
+	Rcl = 0.25;
 
 	r=len(x); //magnitude of distance btwn cluster and particle
-	raux=pow(r*r+Rcl*Rcl, 1.5);
+	raux=pow(r*r+Rcl*Rcl, 1.5); //r squared plus plummer radius squared
 
 	for(i=0;i<3;i++)
 		a[i]=G*Mcl*x[i]/raux;
@@ -822,7 +839,7 @@ void initpar(int potential, double *par, double *apar)
 	}else if(potential==0){
 		// Point mass potential, par = [Mtot]
 		// apar = [G*Mtot]
-		apar[0]=G*par[0];
+		apar[0]= par[0];
 
 	}else if(potential==4){
 		// Composite Galactic potential featuring a disk, bulge, and triaxial NFW halo (from Johnston/Law/Majewski/Helmi)
@@ -1048,15 +1065,16 @@ double jacobi(double *x, double *v, double *par, int potential, double Mcl)
 	return R;
 }
 
-/*
+
 int main (void) {
-	int N=3;
-	double M = Msun;
+
+	int N=2;
+	double M = 100;
 	int potential = 0;
-	int integrator = 1;
-	double x0[3] = {10.,10.,10.}; //initial positions
-	double v0[3] = {5., 5., 5.}; //initial vel
-	double par[1] = {M};
+	int integrator = 0;
+	double x0[3] = {10,0,0}; //initial positions
+	double v0[3] = {0, sqrt(M_sun/len(x0)),0}; //initial vel
+	double par[1] = {M_sun};
 	double dt = 0.5;
 	int sign = 1;
 	double *x1 = (double *)malloc(sizeof(double) * N);
@@ -1067,7 +1085,12 @@ int main (void) {
 	double *v3 = (double *)malloc(sizeof(double) * N);
 	//stream(x0, v0, double *xm1, double *xm2, double *xm3, double *xp1, double *xp2, double *xp3, double *vm1, double *vm2, double *vm3, double *vp1, double *vp2, double *vp3, double *par, double *offset, 0, 1, 1, 50, 2.0, 1.0, 5.0, 0.5)
 	orbit(x0, v0, x1, x2, x3, v1, v2, v3, par, potential, integrator, N, dt, sign);
-
-
-}
+	for (int i = 0; i < N; i++) {
+		//printf("{%f,%f},",v1[i],v2[i]);
+	}
+	/*
+	double x[3] = {1,0,0};
+	double a[3] = {0,0,0};
+	writeln(force_plummer(x, a, 0.5 * M_sun));
 */
+}

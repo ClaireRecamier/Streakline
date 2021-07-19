@@ -1,37 +1,42 @@
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
 config const integrator = 0;   //set Integrator to LF
-config const N = 1;   //set number of timesteps
+config const N = 50;   //set number of timesteps
 config const dt = 0.5; //set timestep
-config const mcl = 0.5 * Msun;
-config const M = 100.0; //particles are released every Mth timestep
+config const mcli: real = 0.5 * Msun;
+config const mclf: real = 0.25 * Msun;
+config const M = 40; //particles are released every Mth timestep
+config const Rcl = 0.25;
 var pot = 0; //set potential to that of pointmass
-var Ne = ceil(N/M) : int; //number of particles released
+var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
 var k: int = 0; //record how many particles have been released
+var dm = (mcli - mclf)/N; //amount of mass released per timesteps
+var mcl: real = mcli;
+
 
 
 
 proc main () {
+  //writeln(force_plummer((1,0,0), 0.25));
   //create array of tuples to hold position and velocity and velocity at each timestep
   var pos: [0..N] 3*real;
   var vel: [0..N] 3*real;
   //hardcode initial position and velocity
   pos[0]=(10,0,0);
   vel[0]=(0,sqrt(Msun/len(pos[0])),0); //set velocity equal to centripetal velocity
-  //vel[0] = (0,20,0);
 
   var pos_lead: [1..Ne] 3*real;
   var pos_trail: [1..Ne] 3*real;
   var vel_lead: [1..Ne] 3*real;
   var vel_trail: [1..Ne] 3*real;
-
+  /*
   //hardcode values for stream particles
   k = 1;
   pos_lead[1] = (9,0,0);
   vel_lead[1] = (0,sqrt(Msun/len(pos_lead[1])),0);
   pos_trail[1] = (11,0,0);
   vel_trail [1] = (0,sqrt(Msun/len(pos_trail[1])),0);
-
+*/
 
   //writeln("initial energy ", energy(pos,vel,0));
   orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
@@ -46,23 +51,23 @@ proc main () {
 
 //orbit procedure: advances cluster in position and velocity using integrator of choice by N timesteps
 proc orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail) {
-  //should i store halfstep at index 0 or index 1
   if integrator == 0  { //if leapfrog
     //move velocity forward half a timestep
     halfstep(pos[0],vel[0],pot,dt,1.0);
-    //writeln(pos_lead[1][0]);
-    //make N full steps in pos and vel forwards
-    //writeln(pos_lead[1][0]);
-    for i in 1..N {//for each timestep
-      //decrease mass
-
+    for i in 1..N {//make N full steps in pos and vel forwards
+      mcl -= dm;//decrease mass
       leapfrog(pos,vel,i,dt);
 
       for j in 1..k {
-
+        write("{",pos_lead[j][0],",",pos_lead[j][1],"},");
         stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
-        //writeln(pos_lead[j][0]);
         stream_step(pos_trail[j], vel_trail[j], pos[i], dt);
+      }
+
+      if i % M == 0 {
+        k+=1;
+        eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
+
       }
 
     }
@@ -85,15 +90,39 @@ proc stream_step(ref pos, ref vel, pos_cl, dt) {
   var a: 3*real;
   a = force(pos,pot);
   //calculate plummer acceleration
-  //a += force_plummer();
+  a += force_plummer(pos_cl - pos, Rcl);
   //update velocity of jth particle
   vel += dt * a;
 }
 
 //procedure to eject particles
-proc eject() {
+proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_trail) {
+  //calculate angular velocity of Cluster
+  var omega: 3*real;
+  omega = cross(pos_cl, vel_cl); //r x v
+  var r = len(pos_cl);
+  omega = omega / (r**2); //(r x v)/r^2
 
+  var Rj: real = tidal_radius(pos_cl, vel_cl, len(omega));//calculate tidal radius
+  //initial position of particle is position of cluster plus or minus tidal radius
+  //writeln("Rj: ",Rj);
+  pos_lead = pos_cl - Rj;
+  pos_trail = pos_cl + Rj;
+  //pos_lead = pos_cl - 1;
+  //pos_trail = pos_cl + 1;
 
+  //initial velocity of particle is angular velocity of cluster times pos cluster - tidal radius
+  vel_lead = cross(omega, pos_lead); // v = omega cross r
+  vel_trail = cross(omega, pos_trail);
+
+}
+
+proc cross((x1,y1,z1),(x2,y2,z2)) {
+  var cross_product: 3*real;
+  cross_product[0] = y1 * z2 - z1 * y2;
+  cross_product[1] = z1 * x2 - x1 * z2;
+  cross_product[2] = x1 * y2 - y1 * x2;
+  return cross_product;
 }
 
 //shifts velocity by a halfstep in direction of sign
@@ -130,8 +159,19 @@ proc force(pos,pot){
   return acc;
 }
 
-proc force_plummer() {
+proc force_plummer(r, Rcl) {
+  // dist from cluster to particle, cluster radius
+  var dist = len(r);
+  var raux: real = sqrt(dist**2 + Rcl**2);
+  var acc: 3*real;
+  acc = (mcl / raux**3 ) * r;
+  //write("{",acc[0],",",acc[1],"},");
+  return acc;
+}
 
+proc tidal_radius(pos_cl,vel_cl,omega) {
+  //currently using circular cluster orbits in milky way potential approx
+  return (Msun/(2.0*omega*omega))**(1.0/3.0);
 }
 
 proc len((x,y,z)) {
