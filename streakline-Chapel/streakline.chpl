@@ -1,23 +1,25 @@
+use IO;
+
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
 config const integrator = 0;   //set Integrator to LF
-config const N = 50;   //set number of timesteps
-config const dt = 0.5; //set timestep
-config const mcli: real = 0.5 * Msun;
-config const mclf: real = 0.25 * Msun;
+config const N = 100;   //set number of timesteps
+config const dt = 0.1; //set timestep
+config const mcli: real = 0.5 * Msun; //initial mass of cluster
+config const mclf: real = 0.25 * Msun; //final mass of cluster
 config const M = 40; //particles are released every Mth timestep
-config const Rcl = 0.25;
+config const Rcl = 0.25; //radius of plummer core
 var pot = 0; //set potential to that of pointmass
 var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
 var k: int = 0; //record how many particles have been released
 var dm = (mcli - mclf)/N; //amount of mass released per timesteps
-var mcl: real = mcli;
-
-
+var mcl: real = mcli; //current mass of cluster
+var cfile = open("test.csv",iomode.cw); //create test.csv and open
+var myWritingChannel = cfile.writer(); //open writing channel to test.csv
 
 
 proc main () {
-  //writeln(force_plummer((1,0,0), 0.25));
+  writeln(force_plummer((1.0,0.0,0.0), 0.25));
   //create array of tuples to hold position and velocity and velocity at each timestep
   var pos: [0..N] 3*real;
   var vel: [0..N] 3*real;
@@ -29,6 +31,7 @@ proc main () {
   var pos_trail: [1..Ne] 3*real;
   var vel_lead: [1..Ne] 3*real;
   var vel_trail: [1..Ne] 3*real;
+
   /*
   //hardcode values for stream particles
   k = 1;
@@ -38,9 +41,12 @@ proc main () {
   vel_trail [1] = (0,sqrt(Msun/len(pos_trail[1])),0);
 */
 
+  //myWritingChannel.write("x cluster,y cluster,x lead trail,y lead tail,x tail tail,y trail tail\n");
+
   //writeln("initial energy ", energy(pos,vel,0));
   orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
   //writeln("final energy ", energy(pos,vel,N));
+
 /*
   for i in 0..N do {
     //writeln(pos[i][0]); //print x coordinates
@@ -54,21 +60,26 @@ proc orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel
   if integrator == 0  { //if leapfrog
     //move velocity forward half a timestep
     halfstep(pos[0],vel[0],pot,dt,1.0);
+    //myWritingChannel.write(pos[0][0],",",pos[0][1],",");
     for i in 1..N {//make N full steps in pos and vel forwards
       mcl -= dm;//decrease mass
+
+      if i == 1 { //if i % M == 0
+        k+=1;
+        eject(pos[0],vel[0],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
+        //myWritingChannel.write(pos_lead[1][0],",",pos_lead[1][1],",",pos_trail[1][0],",",pos_trail[1][1],"\n");
+      }
+
       leapfrog(pos,vel,i,dt);
 
+
       for j in 1..k {
-        write("{",pos_lead[j][0],",",pos_lead[j][1],"},");
         stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
         stream_step(pos_trail[j], vel_trail[j], pos[i], dt);
+        //myWritingChannel.write(pos[i][0],",",pos[i][1],",",pos_lead[j][0],",",pos_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],"\n");
       }
 
-      if i % M == 0 {
-        k+=1;
-        eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
 
-      }
 
     }
     //move velocity backward half a timestep
@@ -106,15 +117,18 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
   var Rj: real = tidal_radius(pos_cl, vel_cl, len(omega));//calculate tidal radius
   //initial position of particle is position of cluster plus or minus tidal radius
   //writeln("Rj: ",Rj);
-  pos_lead = pos_cl - Rj;
-  pos_trail = pos_cl + Rj;
-  //pos_lead = pos_cl - 1;
-  //pos_trail = pos_cl + 1;
+  //pos_lead = pos_cl - (Rj * (pos_cl/r)); //multiplied by unit vector
+  //pos_trail = pos_cl + (Rj * (pos_cl/r));
+  pos_lead = pos_cl - (0.25*(pos_cl/r));
+  pos_trail = pos_cl + (0.25*(pos_cl/r));
 
   //initial velocity of particle is angular velocity of cluster times pos cluster - tidal radius
   vel_lead = cross(omega, pos_lead); // v = omega cross r
   vel_trail = cross(omega, pos_trail);
-
+  writeln(pos_lead);
+  writeln(pos_trail);
+  writeln(vel_lead);
+  writeln(vel_trail);
 }
 
 proc cross((x1,y1,z1),(x2,y2,z2)) {
