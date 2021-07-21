@@ -182,8 +182,9 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		rm=(r-0.25)/r; //inner particle
 		rp=(r+0.25)/r; //outer particle
 		vtot=len(v); //magnitude of velocity of cluster
-		vlead=(vtot-om*0.25)/vtot; //velocity of cluster, minus velocity of particle, divided by velocity of cluster?
-		vtrail=(vtot+om*0.25)/vtot;
+		vlead=(vtot-(om*0.25))/vtot; //velocity of cluster, minus velocity of particle, divided by velocity of cluster?
+		vtrail=(vtot+(om*0.25))/vtot;
+		//printf("v val %f\n",vtot-om*0.25);
 		// Inner particle (leading tail)
 		xm1[k]=x[0]*rm;
 		xm2[k]=x[1]*rm;
@@ -200,7 +201,9 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		vp3[k]=v[2]*vtrail;
 		fprintf(fpt,"%f,%f,%f,%f,%f,%f\n",xc1[0],xc2[0],xm1[0],xm2[0],xp1[0],xp2[0]);
 		k++;
-		printf("%f,%f,%f,%f\n",xm1[0],xm2[0],xp1[0],xp2[0]);
+		//printf("%f,%f,%f,%f\n",xm1[0],xm2[0],xp1[0],xp2[0]);
+		printf("%f,%f,%f\n",vm1[0],vm2[0],vm3[0]);
+
 	}
 
 	// Subsequent steps
@@ -496,6 +499,8 @@ void dostep_stream(double *xc, double *x, double *v, double *par, int potential,
 		force(xt, at, par, potential); //acelerations, based on xt, get stored in at
 //         if(potential==7) par[12]+=dts;
         force_plummer(xr,ar,Mcl); //accelerations, based on xr, get stored in ar
+				//printf("xt: %f, %f, %f, a: %f,%f,%f,plummer:,%f,%f,%f\n",xt[0],xt[1],xt[2],at[0],at[1],at[2],ar[0],ar[1],ar[2]);
+
 		for(j=0;j<3;j++)
 			vt[j]=v[j]+dts*(at[j]+ar[j]); //update velocity with both acceleration vectors
 
@@ -1071,14 +1076,14 @@ double jacobi(double *x, double *v, double *par, int potential, double Mcl)
 
 int main (void) {
 
-	int N=100;
+	int N=3;
 	double M = 100;
 	int potential = 0;
 	int integrator = 0;
 	double x0[3] = {10,0,0}; //initial positions
 	double v0[3] = {0, sqrt(M_sun/len(x0)),0}; //initial vel
 	double par[1] = {M_sun};
-	double dt = 0.1;
+	double dt = 0.5;
 	int sign = 1;
 	double *offset;
 	double *x1 = (double *)malloc(sizeof(double) * N);

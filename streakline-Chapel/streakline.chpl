@@ -3,11 +3,11 @@ use IO;
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
 config const integrator = 0;   //set Integrator to LF
-config const N = 100;   //set number of timesteps
-config const dt = 0.1; //set timestep
+config const N = 3;   //set number of timesteps
+config const dt = 0.5; //set timestep
 config const mcli: real = 0.5 * Msun; //initial mass of cluster
 config const mclf: real = 0.25 * Msun; //final mass of cluster
-config const M = 40; //particles are released every Mth timestep
+config const M = 1; //particles are released every Mth timestep
 config const Rcl = 0.25; //radius of plummer core
 var pot = 0; //set potential to that of pointmass
 var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
@@ -19,7 +19,7 @@ var myWritingChannel = cfile.writer(); //open writing channel to test.csv
 
 
 proc main () {
-  writeln(force_plummer((1.0,0.0,0.0), 0.25));
+  //writeln(force_plummer((1.0,0.0,0.0), 0.25));
   //create array of tuples to hold position and velocity and velocity at each timestep
   var pos: [0..N] 3*real;
   var vel: [0..N] 3*real;
@@ -41,7 +41,7 @@ proc main () {
   vel_trail [1] = (0,sqrt(Msun/len(pos_trail[1])),0);
 */
 
-  //myWritingChannel.write("x cluster,y cluster,x lead trail,y lead tail,x tail tail,y trail tail\n");
+  myWritingChannel.write("x cluster,y cluster,x lead trail,y lead tail,x tail tail,y trail tail\n");
 
   //writeln("initial energy ", energy(pos,vel,0));
   orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
@@ -60,23 +60,25 @@ proc orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel
   if integrator == 0  { //if leapfrog
     //move velocity forward half a timestep
     halfstep(pos[0],vel[0],pot,dt,1.0);
-    //myWritingChannel.write(pos[0][0],",",pos[0][1],",");
     for i in 1..N {//make N full steps in pos and vel forwards
       mcl -= dm;//decrease mass
 
       if i == 1 { //if i % M == 0
         k+=1;
         eject(pos[0],vel[0],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
-        //myWritingChannel.write(pos_lead[1][0],",",pos_lead[1][1],",",pos_trail[1][0],",",pos_trail[1][1],"\n");
+        myWritingChannel.write(pos[0][0],",",pos[0][1],",",pos_lead[k][0],",",pos_lead[k][1],",",pos_trail[k][0],",",pos_trail[k][1],"\n");
+        writeln("after ejecting ", vel_lead[k]);
+        //writeln(pos_trail[k]);
+
       }
 
       leapfrog(pos,vel,i,dt);
 
-
       for j in 1..k {
         stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
         stream_step(pos_trail[j], vel_trail[j], pos[i], dt);
-        //myWritingChannel.write(pos[i][0],",",pos[i][1],",",pos_lead[j][0],",",pos_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],"\n");
+
+        myWritingChannel.write(pos[i][0],",",pos[i][1],",",pos_lead[j][0],",",pos_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],"\n");
       }
 
 
@@ -100,6 +102,9 @@ proc stream_step(ref pos, ref vel, pos_cl, dt) {
   //calculate acceleration from Msun
   var a: 3*real;
   a = force(pos,pot);
+  //writeln("pos ",pos);
+  //writeln("a ",a);
+  //writeln("force plummer ",force_plummer(pos_cl - pos, Rcl));
   //calculate plummer acceleration
   a += force_plummer(pos_cl - pos, Rcl);
   //update velocity of jth particle
@@ -125,17 +130,19 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
   //initial velocity of particle is angular velocity of cluster times pos cluster - tidal radius
   vel_lead = cross(omega, pos_lead); // v = omega cross r
   vel_trail = cross(omega, pos_trail);
+  writeln(omega);
   writeln(pos_lead);
-  writeln(pos_trail);
   writeln(vel_lead);
-  writeln(vel_trail);
+  //writeln(pos_trail);
+  //writeln(vel_lead);
+  //writeln(vel_trail);
 }
 
 proc cross((x1,y1,z1),(x2,y2,z2)) {
   var cross_product: 3*real;
-  cross_product[0] = y1 * z2 - z1 * y2;
-  cross_product[1] = z1 * x2 - x1 * z2;
-  cross_product[2] = x1 * y2 - y1 * x2;
+  cross_product[0] = (y1 * z2) - (z1 * y2);
+  cross_product[1] = (z1 * x2) - (x1 * z2);
+  cross_product[2] = (x1 * y2) - (y1 * x2);
   return cross_product;
 }
 
