@@ -47,7 +47,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 	Mcli = mcli; //initial mass of cluster
 	Mclf = mclf; //final mass of cluster
 	Mcl = Mcli; //current mass of cluster?
-	dM = (Mcli-Mclf)/(double)N; //total mass lost, divided by number of timesteps
+	dM = (Mcli-Mclf)/(double)N; //tott2,al mass lost, divided by number of timesteps
 
 	// Cluster size
 	Rcl = rcl;
@@ -64,7 +64,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		r3=gasdev(&s1);
 		dvl[i]=sqrt(r1*r1 + r2*r2 + r3*r3)*offset[1]/3.;
 
-		// Trailing tail velocity offsets
+		// Trailing tail dtvelocity offsets
 		r1=gasdev(&s1);
 		r2=gasdev(&s1);
 		r3=gasdev(&s1);
@@ -149,9 +149,9 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		dostep1(x,v,apar,potential,dt,sign);
 		//for(j=0;j<3;j++) //loop through each coordinate
 			//x[j]=x[j]-dt*v[j]; //full step backwards in position?
-
-
-
+		//printf("cluster pos after first halfstep: %f,%f,%f\n",x[0],x[1],x[2]);
+		//printf("cluster vel after first halfstep: %f,%f,%f\n",v[0],v[1],v[2]);
+		fprintf(fpt,"%f,%f,%f,%f\n",x[0],x[1],v[0],v[1]);
         if(potential==6){
             dostep1(xlmc,vlmc,apar_aux,4,dt,sign);
             for(j=0;j<3;j++)
@@ -171,39 +171,6 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 
 		// Update output arrays
 		t2n(x, xc1, xc2, xc3, 0); //fill array xc1, xc2, xc3: xc1[0] = x[0], xc2[0] = x[1], xc3[0]=x[2]. Update array xc1, xc2, and xc3, which will store all the positions of the cluster at each timestel?
-
-
-		//EJECT particle at 0th timestep, instead of every Mth timestep
-		r=len(x); //distance of cluster from origin
-		omega[0]=x[1]*v[2]-x[2]*v[1]; // r x v
-		omega[1]=x[2]*v[0]-x[0]*v[2];
-		omega[2]=x[0]*v[1]-x[1]*v[0];
-		om=len(omega)/(r*r); // magnitude of: r x v / r^2
-		rm=(r-0.25)/r; //inner particle
-		rp=(r+0.25)/r; //outer particle
-		vtot=len(v); //magnitude of velocity of cluster
-		vlead=(vtot-(om*0.25))/vtot; //velocity of cluster, minus velocity of particle, divided by velocity of cluster?
-		vtrail=(vtot+(om*0.25))/vtot;
-		//printf("v val %f\n",vtot-om*0.25);
-		// Inner particle (leading tail)
-		xm1[k]=x[0]*rm;
-		xm2[k]=x[1]*rm;
-		xm3[k]=x[2]*rm;
-		vm1[k]=v[0]*vlead;
-		vm2[k]=v[1]*vlead;
-		vm3[k]=v[2]*vlead;
-		// Outer particle (trailing tail)
-		xp1[k]=x[0]*rp;
-		xp2[k]=x[1]*rp;
-		xp3[k]=x[2]*rp;
-		vp1[k]=v[0]*vtrail;
-		vp2[k]=v[1]*vtrail;
-		vp3[k]=v[2]*vtrail;
-		fprintf(fpt,"%f,%f,%f,%f,%f,%f\n",xc1[0],xc2[0],xm1[0],xm2[0],xp1[0],xp2[0]);
-		k++;
-		//printf("%f,%f,%f,%f\n",xm1[0],xm2[0],xp1[0],xp2[0]);
-		printf("%f,%f,%f\n",vm1[0],vm2[0],vm3[0]);
-
 	}
 
 	// Subsequent steps
@@ -211,7 +178,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		Mcl-=dM; //decrease current mass
 
 		(*pt2dostep)(x,v,apar,potential,dt,sign); //move cluster forward
-
+		fprintf(fpt,"%f,%f,%f,%f",x[0],x[1],v[0],v[1]);
         if(potential==6){
             (*pt2dostep)(xlmc,vlmc,apar_aux,4,dt,sign);
             for(j=0;j<3;j++)
@@ -244,10 +211,11 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 			t2n(xs, xp1, xp2, xp3, j); //copy position of particle into xp1, xp2, xp3. This is the same value of j as for the inner particle, whats the point of updating these arrays if they're not used?
 			t2n(vs, vp1, vp2, vp3, j);
 
-			fprintf(fpt,"%f,%f,%f,%f,%f,%f\n",xc1[i],xc2[i],xm1[j],xm2[j],xp1[j],xp2[j]);
+			fprintf(fpt,",%f,%f,%f,%f,%f,%f,%f,%f",xm1[j],xm2[j],vm1[j],vm2[j],xp1[j],xp2[j],vp1[j],vp2[j]);
 
 
 		}
+
 		/*
 				if(i%M==0){
 
@@ -294,6 +262,53 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 				time = time + dt*sign;
 			}
 		*/
+
+		if (i % M == 0) {
+				//EJECT particle at Mth timestep
+				r=len(x); //distance of cluster from origin
+				omega[0]=x[1]*v[2]-x[2]*v[1]; // r x v
+				omega[1]=x[2]*v[0]-x[0]*v[2];
+				omega[2]=x[0]*v[1]-x[1]*v[0];
+		    //printf("omega of cluster: %f,%f,%f\n",omega[0],omega[1],omega[2]);
+				om=len(omega)/(r*r); // magnitude of: r x v / r^2
+				Rj[k]=jacobi(x, v, apar, potential, Mcl);
+				rm=(r-Rj[k])/r; //inner particle
+				rp=(r+Rj[k])/r; //outer particle
+				printf("tidal radius: %f,%f,%f\n",Rj[k] * x[0]/r,Rj[k] * x[1]/r,Rj[k] * x[2]/r);
+				vtot=len(v); //magnitude of velocity of cluster
+				vlead=(vtot-(om*Rj[k]))/vtot; //velocity of cluster, minus velocity of particle, divided by velocity of cluster?
+				vtrail=(vtot+(om*Rj[k]))/vtot;
+				//printf("v val %f\n",vtot-om*0.25);
+				// Inner particle (leading tail)
+
+				xm1[k]=x[0]*rm;
+				xm2[k]=x[1]*rm;
+				xm3[k]=x[2]*rm;
+				vm1[k]=v[0]*vlead;
+				vm2[k]=v[1]*vlead;
+				vm3[k]=v[2]*vlead;
+				//printf("cluster pos at ejection: %f,%f,%f\n",x[0],x[1],x[2]);
+		  //printf("cluster vel at ejection: %f,%f,%f\n",v[0],v[1],v[2]);
+			//printf("x leading particle at ejection: %f,%f,%f\n",xm1[k],xm2[k],xm3[k]);
+		  //printf("v leading particle at ejection: %f,%f,%f\n",vm1[k],vm2[k],vm3[k]);
+
+				// Outer particle (trailing tail)
+				xp1[k]=x[0]*rp;
+				xp2[k]=x[1]*rp;
+				xp3[k]=x[2]*rp;
+				vp1[k]=v[0]*vtrail;
+				vp2[k]=v[1]*vtrail;
+				vp3[k]=v[2]*vtrail;
+				//printf("x trailing particle at ejection: %f,%f,%f\n",xp1[k],xp2[k],xp3[k]);
+				//printf("v trailing particle at ejection: %f,%f,%f\n",vp1[k],vp2[k],vp3[k]);
+				fprintf(fpt,",%f,%f,%f,%f,%f,%f,%f,%f",xm1[k],xm2[k],vm1[k],vm2[k],xp1[k],xp2[k],vp1[k],vp2[k]);
+				k++;
+				
+				//printf("%f,%f,%f,%f\n",xm1[0],xm2[0],xp1[0],xp2[0]);
+				//printf("%f,%f,%f\n",vm1[0],vm2[0],vm3[0]);
+	}
+
+		fprintf(fpt,"\n");
 }
 
 
@@ -430,7 +445,7 @@ void dostep1(double *x, double *v, double *par, int potential, double deltat, do
 
 	dts=sign*dt;
 	force(x, a, par, potential);
-
+	//printf("dt %f calc from halfstep: %f,%f,%f\n",dts,0.5*dts*a[0],0.5*dts*a[1],0.5*dts*a[2]);
 
 	v[0]=v[0]+0.5*dts*a[0];
 	v[1]=v[1]+0.5*dts*a[1];
@@ -1041,11 +1056,12 @@ void initpar(int potential, double *par, double *apar)
 double jacobi(double *x, double *v, double *par, int potential, double Mcl)
 {	// Jacobi radius of a cluster, aka tidal radius
 	// at the position x, velocity v, and in a given potential
+
 	int i;
 	double R, om, dpot, delta, r;
 	double omega[3], x1[3], x2[3], a1[3], a2[3], dx[3]; //, da[3];
 
-	// Radial distance
+	// Radial distance of cluster from center of galaxy
 	r=len(x);
 
 	// Angular velocity
@@ -1053,22 +1069,34 @@ double jacobi(double *x, double *v, double *par, int potential, double Mcl)
 	omega[1]=x[2]*v[0]-x[0]*v[2];
 	omega[2]=x[0]*v[1]-x[1]*v[0];
 	om=len(omega)/(r*r);
+	//printf("pos cl: %f,%f,%f, vel cl: %f,%f,%f, omega: %f\n",x[0],x[1],x[2],v[0],v[1],v[2],om);
 
 	// Potential derivative
-	delta=0.02*kpc;
+	delta = 0.02 * kpcau;//delta=0.02*kpc;
 	for(i=0;i<3;i++){
-		x1[i]=x[i]/r*(r-delta);
-		x2[i]=x[i]/r*(r+delta);
+		x1[i]=x[i]/r*(r-delta); //unit vector * r - delta./ position of cluster ,slightly back in time
+		x2[i]=x[i]/r*(r+delta); //position of cluster, slightly forward in time
 	}
+	//printf("x1: %f,%f,%f\n",x1[0],x1[1],x1[2]);
+	//printf("x2: %f,%f,%f\n",x2[0],x2[1],x2[2]);
+
 	force(x1, a1, par, potential);
 	force(x2, a2, par, potential);
+	//printf("a1: %0.20f,%0.20f,%0.20f\n",a1[0],a1[1],a1[2]);
+	//printf("a2: %0.20f,%0.20f,%0.20f\n",a2[0],a2[1],a2[2]);
+	//printf("len a1 %0.30f\n",len(a1));
+	//printf("len a2 %0.30f\n",len(a2));
 	for(i=0;i<3;i++){
 		dx[i]=x1[i]-x2[i];
 	}
 	dpot=(len(a1)-len(a2))/len(dx);
+	//printf("len x1-x2 %0.30f\n", len(dx));
+	//printf("len a1-a2 %0.30f\n",len(a1)-len(a2));
+	printf("dpot: %0.30f,%0.30f,%0.30f\n",dpot*x[0]/r,dpot*x[1]/r,dpot*x[2]/r);
 
 	// Jacobi radius
-	R=pow(G*Mcl/fabs(om*om+dpot),1./3.); //fabs = absolute value of floating point number
+	printf("mcl %0.10f\n",Mcl);
+	R=pow(Mcl/fabs(om*om+dpot),1./3.);//R=pow(G*Mcl/fabs(om*om+dpot),1./3.); //fabs = absolute value of floating point number
 
 	return R;
 }
@@ -1076,39 +1104,40 @@ double jacobi(double *x, double *v, double *par, int potential, double Mcl)
 
 int main (void) {
 
-	int N=3;
+	int N=500;
 	double M = 100;
 	int potential = 0;
 	int integrator = 0;
 	double x0[3] = {10,0,0}; //initial positions
 	double v0[3] = {0, sqrt(M_sun/len(x0)),0}; //initial vel
 	double par[1] = {M_sun};
-	double dt = 0.5;
+	double dt = 0.1;
 	int sign = 1;
 	double *offset;
+	double Ne = N/M;
 	double *x1 = (double *)malloc(sizeof(double) * N);
 	double *x2 = (double *)malloc(sizeof(double) * N);
 	double *x3 = (double *)malloc(sizeof(double) * N);
 	double *v1 = (double *)malloc(sizeof(double) * N);
 	double *v2 = (double *)malloc(sizeof(double) * N);
 	double *v3 = (double *)malloc(sizeof(double) * N);
-	double *xm1 = (double *)malloc(sizeof(double) * 3); //position of leading trail
-	double *xm2 = (double *)malloc(sizeof(double) * 3);
-	double *xm3 = (double *)malloc(sizeof(double) * 3);
-	double *vm1 = (double *)malloc(sizeof(double) * 3);
-	double *vm2 = (double *)malloc(sizeof(double) * 3);
-	double *vm3 = (double *)malloc(sizeof(double) * 3);
-	double *xp1 = (double *)malloc(sizeof(double) * 3); //position of trailing trail
-	double *xp2 = (double *)malloc(sizeof(double) * 3);
-	double *xp3 = (double *)malloc(sizeof(double) * 3);
-	double *vp1 = (double *)malloc(sizeof(double) * 3);
-	double *vp2 = (double *)malloc(sizeof(double) * 3);
-	double *vp3 = (double *)malloc(sizeof(double) * 3);
+	double *xm1 = (double *)malloc(sizeof(double) * Ne); //position of leading trail
+	double *xm2 = (double *)malloc(sizeof(double) * Ne);
+	double *xm3 = (double *)malloc(sizeof(double) * Ne);
+	double *vm1 = (double *)malloc(sizeof(double) * Ne);
+	double *vm2 = (double *)malloc(sizeof(double) * Ne);
+	double *vm3 = (double *)malloc(sizeof(double) * Ne);
+	double *xp1 = (double *)malloc(sizeof(double) * Ne); //position of trailing trail
+	double *xp2 = (double *)malloc(sizeof(double) * Ne);
+	double *xp3 = (double *)malloc(sizeof(double) * Ne);
+	double *vp1 = (double *)malloc(sizeof(double) * Ne);
+	double *vp2 = (double *)malloc(sizeof(double) * Ne);
+	double *vp3 = (double *)malloc(sizeof(double) * Ne);
 
 	FILE *fpt = fopen("ctest.csv", "w+");
-	fprintf(fpt,"xcl,ycl,xlt,ylt,xtt,ytt\n");
+	fprintf(fpt,"xcl,ycl,xvcl,yvcl,xlt,ylt,xvlt,yvlt,xtt,ytt,xvtt,yvtt\n");
 
-	stream(x0, v0, xm1, xm2,xm3, xp1, xp2, xp3, vm1, vm2, vm3, vp1, vp2, vp3, par, offset, 0, 0, N, M, 0.5*M_sun,0.25*M_sun, 0.25, 0.1, fpt);
+	stream(x0, v0, xm1, xm2,xm3, xp1, xp2, xp3, vm1, vm2, vm3, vp1, vp2, vp3, par, offset, 0, 0, N, M, 0.005*M_sun,0.004*M_sun, 0.25, dt, fpt);
 	//orbit(x0, v0, x1, x2, x3, v1, v2, v3, par, potential, integrator, N, dt, sign);
 
 	fclose(fpt);

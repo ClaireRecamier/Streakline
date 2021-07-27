@@ -35,6 +35,7 @@ extern double Mcli, Mclf, Rcl, dt;
 #define G 6.67e-11		// Gravitational constant
 #define yr 3.15569e7		// yr in seconds
 #define kpc 3.08567758e19	// kpc in m
+#define kpcau 2.063e+8
 #define kms 1e3			// km/s in m/s
 #define Msun 1.99e30		// Mass of the Sun
 #define pi 3.141592653589793
