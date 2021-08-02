@@ -2,22 +2,19 @@ use IO;
 
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
-const mau = 6.68458 * (10**(-12)); //meters to AU
-const kpcau = 2.063 * (10**8); //kpc to au
-const secyr = 60*60*24*365.24; //seconds to years
 config const integrator = 0;   //set Integrator to LF
-config const N = 500;   //set number of timesteps
-config const dt = 0.1; //set timestep
-config const mcli: real = 0.005 * Msun; //initial mass of cluster
-config const mclf: real = 0.004 * Msun; //final mass of cluster
-config const M = 100; //particles are released every Mth timestep
+config const N = 1000;   //set number of timesteps
+config const dt = 0.001; //set timestep
+config const mcli: real = 0.000003003 * Msun; //initial mass of cluster
+config const mclf: real = 0.00000300 * Msun; //final mass of cluster
+config const M = 200; //particles are released every Mth timestep
 config const Rcl = 0.25; //radius of plummer core
 var pot = 0; //set potential to that of pointmass
 var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
 var k: int = 0; //record how many particles have been released
 var dm = (mcli - mclf)/N; //amount of mass released per timesteps
 var mcl: real = mcli; //current mass of cluster
-var cfile = open("test.csv",iomode.cw); //create test.csv and open
+var cfile = open("test2.csv",iomode.cw); //create test.csv and open
 var myWritingChannel = cfile.writer(); //open writing channel to test.csv
 
 
@@ -27,8 +24,9 @@ proc main () {
   var pos: [0..N] 3*real;
   var vel: [0..N] 3*real;
   //hardcode initial position and velocity
-  pos[0]=(10,0,0);
-  vel[0]=(0,sqrt(Msun/len(pos[0])),0); //set velocity equal to centripetal velocity
+  pos[0]=(-.983303,0,0);
+  //vel[0]=(0,0.00029147 * 365.24,0); //set velocity equal to centripetal velocity
+  vel[0]=(0.0,2*pi,0.0);
 
   var pos_lead: [1..Ne] 3*real;
   var pos_trail: [1..Ne] 3*real;
@@ -47,12 +45,9 @@ proc main () {
   myWritingChannel.write("x cluster,y cluster,x cluster vel,y cluster vel,x lead trail,y lead tail,x vel lead tail, y vel lead tail,x trail tail,y trail tail,x vel trail tail, y vel trail tail\n");
 
   //writeln("initial energy ", energy(pos,vel,0));
-  back_orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
-  pos[0] = pos[N-1];
-  vel[0] = vel[N-1];
-  //writeln("starting pos ",pos[0], " starting vel ",vel[0]);
-  fwd_orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
+  orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
   //writeln("final energy ", energy(pos,vel,N));
+
 /*
   for i in 0..N do {
     //writeln(pos[i][0]); //print x coordinates
@@ -62,17 +57,21 @@ proc main () {
 }
 
 //orbit procedure: advances cluster in position and velocity using integrator of choice by N timesteps
-proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail) {
+proc orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail) {
     if integrator == 0  { //if leapfrog
+      //writeln("vel cluster before first halfstep: ",vel[0]);
+
       //move velocity forward half a timestep
       halfstep(pos[0],vel[0],pot,dt,1.0);
       myWritingChannel.write(pos[0][0],",",pos[0][1],",",vel[0][0],",",vel[0][1],"\n");
       //writeln("pos cluster after first halfstep: ",pos[0]);
       //writeln("vel cluster after first halfstep: ",vel[0]);
-    for i in 1..N-1 {//make N full steps in pos and vel forwards
+    for i in 1..N {//make N full steps in pos and vel forwards
       mcl -= dm;//decrease mass
 
       leapfrog(pos,vel,i,dt);
+      //writeln("pos cluster after step: ",pos[i]);
+      //writeln("vel cluster after step: ",vel[i]);
       myWritingChannel.write(pos[i][0],",",pos[i][1],",",vel[i][0],",",vel[i][1]);
 
       for j in 1..k {
@@ -95,7 +94,7 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
 
     }
     //move velocity backward half a timestep
-    halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
+    halfstep(pos[N],vel[N],pot,dt,-1.0);
   }
   /*
   else { //if RK
@@ -105,30 +104,6 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
   */
 }
 
-proc back_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail)
-{
-  if integrator == 0  { //if leapfrog
-    //move velocity forward half a timestep
-    //writeln("vel cluster before first halfstep: ",vel[0]);
-    halfstep(pos[0],vel[0],pot,dt,-1.0);
-    //myWritingChannel.write(pos[0][0],",",pos[0][1],",",vel[0][0],",",vel[0][1],"\n");
-    //writeln("pos cluster after first halfstep: ",pos[0]);
-    //writeln("vel cluster after first halfstep: ",vel[0]);
-  for i in 1..N-1 {//make N full steps in pos and vel forwards
-    //mcl -= dm;//decrease mass
-
-    leapfrog(pos,vel,i,dt,-1.0);
-    //myWritingChannel.write(pos[i][0],",",pos[i][1],",",vel[i][0],",",vel[i][1],"\n");
-
-  }
-  //move velocity backward half a timestep
-  halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
-  //myWritingChannel.write(pos[N-1][0],",",pos[N-1][1],",",vel[N-1][0],",",vel[N-1][1],"\n");
-  //writeln("ending pos ",pos[N-1]," ending vel ",vel[N-1]);
-  }
-}
-
-
 //procedure to advance ejected particles by a timestep
 proc stream_step(ref pos, ref vel, pos_cl, dt) {
   //update position of jth particle
@@ -136,9 +111,6 @@ proc stream_step(ref pos, ref vel, pos_cl, dt) {
   //calculate acceleration from Msun
   var a: 3*real;
   a = force(pos,pot);
-  //writeln("pos ",pos);
-  //writeln("a ",a);
-  //writeln("force plummer ",force_plummer(pos_cl - pos, Rcl));
   //calculate plummer acceleration
   a += force_plummer(pos_cl - pos, Rcl);
   //update velocity of jth particle
@@ -150,7 +122,6 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
   //calculate angular velocity of Cluster
   var omega: 3*real;
   omega = cross(pos_cl, vel_cl); //r x v
-//  writeln("omega of cluster: ",omega);
   var r = len(pos_cl);
   omega = omega / (r**2); //(r x v)/r^2
   var om: real = len(omega);
@@ -191,7 +162,6 @@ proc halfstep(p,ref v,pot,dt,sign) {
   var signed_dt: real = sign * dt;
   var a: 3*real;
   a = force(p,pot);
-  //writeln("signed dt",signed_dt," calc from halfstep: ",0.5 * signed_dt * a);
   v += 0.5 * signed_dt * a;
 }
 
@@ -233,8 +203,9 @@ proc force_plummer(r, Rcl) {
 
 proc tidal_radius(pos_cl,vel_cl,omega) {
   //writeln("pos cl ",pos_cl," vel cl ",vel_cl," omega ",omega);
+  var kpc: real = 2.063e+8; //kpc in AU
   var un_vec: 3*real = pos_cl/len(pos_cl);
-  var delta = 0.02 * kpcau * un_vec;
+  var delta = 0.02 * kpc * un_vec;
   var x1: 3*real = pos_cl - delta;
   //writeln("x1 " , x1);
   var x2: 3*real = pos_cl + delta;
