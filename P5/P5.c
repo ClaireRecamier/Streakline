@@ -8,7 +8,6 @@ const double M_sun = 4 * pi *pi;
 const double mau = 0.00000000000668458; //meters to AU
 const double secyr = 60*60*24*365.24; //seconds to years
 const double aukpc = 0.00000000484814;//au to kpc
-double Rcl;
 
 
 // Simulation parameters
@@ -879,7 +878,7 @@ void initpar(int potential, double *par, double *apar)
 		apar[3]=2*sinphi*cosphi*(1/(par[3]*par[3]) - 1/(par[4]*par[4]));
 		apar[4]=1/(par[5]*par[5]);
 		apar[5]=par[1];
-		printf("initialization of parameters: %f,%f,%f,%f,%f,%f\n",apar[0],apar[1],apar[2],apar[3],apar[4],apar[5]);
+		//printf("initialization of parameters: %f,%f,%f,%f,%f,%f\n",apar[0],apar[1],apar[2],apar[3],apar[4],apar[5]);
 
 	}else if(potential==0){
 		// Point mass potential, par = [Mtot]

@@ -2,17 +2,17 @@ use IO;
 
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
-const mau = 6.68458 * (10**(-12)); //meters to AU
+const mau = 6.68458e-12; //meters to AU
 const kpcau = 2.063 * (10**8); //kpc to au
-const aukpc = 4.84814 * (10**(-9)); //au to kpcs
+const aukpc = 4.84814e-9;
 const secyr = 60*60*24*365.24; //seconds to years
 config const integrator = 0;   //set Integrator to LF
-config const N = 500;   //set number of timesteps
-config const dt = 0.1; //set timestep
-config const mcli: real = 0.005 * Msun; //initial mass of cluster
-config const mclf: real = 0.004 * Msun; //final mass of cluster
-config const M = 100; //particles are released every Mth timestep
-config const Rcl = 0.25; //radius of plummer core
+config const N = 6000;   //set number of timesteps
+config const dt = 1000000; //set timestep
+config const mcli: real = 20000 * Msun; //initial mass of cluster
+config const mclf: real = 20000 * Msun; //final mass of cluster
+config const M = 1; //particles are released every Mth timestep
+config const Rcl = 20 * 0.001 * kpcau; //radius of plummer core
 var pot = 0; //set potential to that of pointmass
 var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
 var k: int = 0; //record how many particles have been released
@@ -20,7 +20,7 @@ var dm = (mcli - mclf)/N; //amount of mass released per timesteps
 var mcl: real = mcli; //current mass of cluster
 var cfile = open("test.csv",iomode.cw); //create test.csv and open
 var myWritingChannel = cfile.writer(); //open writing channel to test.csv
-
+var calcpar: [0..5] real;
 
 proc main () {
   //writeln(force_plummer((1.0,0.0,0.0), 0.25));
@@ -28,8 +28,8 @@ proc main () {
   var pos: [0..N] 3*real;
   var vel: [0..N] 3*real;
   //hardcode initial position and velocity
-  pos[0]=(10,0,0);
-  vel[0]=(0,sqrt(Msun/len(pos[0])),0); //set velocity equal to centripetal velocity
+  pos[0]=(50.0*kpcau,0,0);
+  vel[0]=(0,0.5 * sqrt(1000000000 * Msun/len(pos[0])),0); //set velocity equal to centripetal velocity
 
   var pos_lead: [1..Ne] 3*real;
   var pos_trail: [1..Ne] 3*real;
@@ -44,6 +44,22 @@ proc main () {
   pos_trail[1] = (11,0,0);
   vel_trail [1] = (0,sqrt(Msun/len(pos_trail[1])),0);
 */
+  //hardcode galactic potential parameters
+  var par: [0..5] real = [430.0 * (10**3) * mau * secyr, 19.5 * kpcau, 88.0, 0.855, 1.0, 1.2];
+  if pot == 3 { //if using triaxial NFW potential
+    //assuming par = [V, rhalo, phi, q_1, q_2, q_z]
+    //calcpar = [GM, c1, c2, c3, c4, rhalo]
+    var cosphi: real = cos(par[2]);
+    var sinphi: real = sin(par[2]);
+    calcpar[0] = par[0]*par[0]*par[1]; //GM
+    calcpar[1] = (cosphi**2)/(par[3]*par[3]) + (sinphi**2)/(par[4]*par[4]);
+    calcpar[2] = (cosphi**2)/(par[4]*par[4]) + (sinphi**2)/(par[3]*par[3]);
+    calcpar[3] = 2*sinphi*cosphi*(1/(par[3]**2) - 1/(par[4]**2));
+    calcpar[4] = 1/(par[5]*par[5]);
+    calcpar[5] = par[1];
+    writeln("initializing param ",calcpar);
+  }
+
 
   myWritingChannel.write("x cluster,y cluster,x cluster vel,y cluster vel,x lead trail,y lead tail,x vel lead tail, y vel lead tail,x trail tail,y trail tail,x vel trail tail, y vel trail tail\n");
 
@@ -54,12 +70,6 @@ proc main () {
   //writeln("starting pos ",pos[0], " starting vel ",vel[0]);
   fwd_orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
   //writeln("final energy ", energy(pos,vel,N));
-/*
-  for i in 0..N do {
-    //writeln(pos[i][0]); //print x coordinates
-    //writeln(pos[i][1]); //print y coordinates
-  } */
-
 }
 
 //orbit procedure: advances cluster in position and velocity using integrator of choice by N timesteps
@@ -67,36 +77,39 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
     if integrator == 0  { //if leapfrog
       //move velocity forward half a timestep
       halfstep(pos[0],vel[0],pot,dt,1.0);
-      myWritingChannel.write(aukpc * pos[0][0],",", aukpc * pos[0][1],",",aukpc * vel[0][0],",",aukpc * vel[0][1],"\n");
+      //myWritingChannel.write(aukpc * pos[0][0],",", aukpc * pos[0][1],",",aukpc * vel[0][0],",",aukpc * vel[0][1],"\n");
       //writeln("pos cluster after first halfstep: ",pos[0]);
       //writeln("vel cluster after first halfstep: ",vel[0]);
     for i in 1..N-1 {//make N full steps in pos and vel forwards
-      mcl -= dm;//decrease mass
+      //mcl -= dm;//decrease mass
 
-      leapfrog(pos,vel,i,dt);
-      myWritingChannel.write(aukpc * pos[i][0],",",aukpc * pos[i][1],",",aukpc * vel[i][0],",",aukpc * vel[i][1]);
+      leapfrog(pos,vel,i,dt,1.0);
+      //myWritingChannel.write(aukpc * pos[i][0],",",aukpc * pos[i][1],",",aukpc * vel[i][0],",",aukpc * vel[i][1],"\n");
 
       for j in 1..k {
         stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
         stream_step(pos_trail[j], vel_trail[j], pos[i], dt);
-
-        myWritingChannel.write(",",aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1]);
+        //myWritingChannel.write(",",aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1]);
       }
 
       if i % M == 0 {
         k+=1;
         eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
-        myWritingChannel.write(",",aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1]);
+        //myWritingChannel.write(aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1],"\n");
         //writeln("after ejecting ", vel_lead[k]);
         //writeln(pos_trail[k]);
 
       }
-
-      myWritingChannel.write("\n");
-
+      //myWritingChannel.write("\n");
     }
     //move velocity backward half a timestep
     halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
+    myWritingChannel.write(aukpc * pos[N-1][0],",",aukpc * pos[N-1][1],",",aukpc * vel[N-1][0],",",aukpc * vel[N-1][1],"\n");
+    //positions of streams at last timestep
+    for j in 1..k {
+      myWritingChannel.write(aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1],"\n");
+    }
+
   }
   /*
   else { //if RK
@@ -123,7 +136,7 @@ proc back_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead
 
   }
   //move velocity backward half a timestep
-  halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
+  halfstep(pos[N-1],vel[N-1],pot,dt,1.0);
   //myWritingChannel.write(pos[N-1][0],",",pos[N-1][1],",",vel[N-1][0],",",vel[N-1][1],"\n");
   //writeln("ending pos ",pos[N-1]," ending vel ",vel[N-1]);
   }
@@ -151,7 +164,7 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
   //calculate angular velocity of Cluster
   var omega: 3*real;
   omega = cross(pos_cl, vel_cl); //r x v
-//  writeln("omega of cluster: ",omega);
+  //writeln("omega of cluster: ",omega);
   var r = len(pos_cl);
   omega = omega / (r**2); //(r x v)/r^2
   var om: real = len(omega);
@@ -197,11 +210,11 @@ proc halfstep(p,ref v,pot,dt,sign) {
 }
 
 //shifts velocity and position by a full step forward
-proc leapfrog(pos, vel, i, dt) {
+proc leapfrog(pos, vel, i, dt, sign) {
   var a: 3*real;
-  pos[i] = pos[i-1] + dt * vel[i-1];
+  pos[i] = pos[i-1] + (vel[i-1] * dt * sign);
   a = force(pos[i],pot);
-  vel[i] = vel[i-1] + dt * a;
+  vel[i] = vel[i-1] + (dt * sign * a);
   /*
   a = force(pos[i-1],pot);
   vel[i] = vel[i-1] + dt * a;
@@ -215,9 +228,20 @@ proc RK(pos,vel,i,dt) {
 
 proc force(pos,pot){
   var acc: 3*real;
+  var r: real;
   if pot == 0 { //if using point mass potential
-    var dist: real = len(pos);
-    acc = (-1,-1,-1)*(Msun * pos)/dist**3; //assumes the sun stays at origin
+    r = len(pos);
+    acc = (-1,-1,-1)*(1000000000 * Msun * pos)/dist**3; //assumes the sun stays at origin
+  }
+  else if pot == 3 { //NFW triaxial potential
+    //calcpar = [GM, c1, c2, c3, c4, rhalo]
+    r = sqrt(calcpar[1]*pos[0]*pos[0] + calcpar[2]*pos[1]*pos[1] + calcpar[3]*pos[0]*pos[1] + calcpar[4]*pos[2]*pos[2]);
+    var aux: real = 0.5 * calcpar[0] / (r**3) * (1.0/(1.0 + calcpar[5]/r)-log(1.0+r/calcpar[5]));
+
+    acc[0]=aux*(2*calcpar[1]*pos[0] + calcpar[3]*pos[1]);
+    acc[1]=aux*(2*calcpar[2]*pos[1] + calcpar[3]*pos[0]);
+    acc[2]=aux*(2*calcpar[4]*pos[2]);
+    //writeln("acc ",acc);
   }
   return acc;
 }
