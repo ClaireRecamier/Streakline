@@ -5,8 +5,10 @@
 
 
 const double M_sun = 4 * pi *pi;
-const double mau = 6.68458 * pow(10,-12); //meters to AU
+const double mau = 0.00000000000668458; //meters to AU
 const double secyr = 60*60*24*365.24; //seconds to years
+const double aukpc = 0.00000000484814;//au to kpc
+double Rcl;
 
 
 // Simulation parameters
@@ -102,11 +104,12 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 	// Backward integration (cluster only)
 
 	if(integrator==0){ //if leapfrog
-    //printf("cluster vel before first halfstep: %0.10f,%0.10f,%0.10f\n",v[0],v[1],v[2]);
+		//printf("cluster pos before first halfstep: %0.10f,%0.10f,%0.10f\n",aukpc * x[0],aukpc * x[1],aukpc * x[2]);
+		//printf("cluster vel before first halfstep: %0.10f,%0.10f,%0.10f\n",aukpc * v[0],aukpc * v[1],aukpc * v[2]);
 		dostep1(x,v,apar,potential,dt,back); //halfstep backwards in only velocity. X is an array of 3 - referring to cluster as one pointmass?
-    //fprintf(fpt,"%0.30f,%0.30f,%0.30f,%0.30f\n",x[0],x[1],v[0],v[1]);
-    //printf("cluster pos after first halfstep: %f,%f,%f\n",x[0],x[1],x[2]);
-		//printf("cluster vel after first halfstep: %0.15f,%0.10f,%f\n",v[0],v[1],v[2]);
+    //fprintf(fpt,"%0.30f,%0.30f,%0.30f,%0.30f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
+    //printf("cluster pos after first halfstep: %f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * x[2]);
+		//printf("cluster vel after first halfstep: %0.15f,%0.10f,%f\n",aukpc * v[0],aukpc * v[1],aukpc * v[2]);
     imin=1;
         time = time + dt*back; //set current time to halfstep back
 
@@ -121,7 +124,8 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 	}
 	for(i=imin;i<N;i++){ //N is number of desired timesteps. if leapfrog, imin=1, if RK, imin=0
 		(*pt2dostep)(x,v,apar,potential,dt,back); //step backwards in pos and vel
-    //fprintf(fpt,"%0.30f,%0.30f,%0.30f,%0.30f\n",x[0],x[1],v[0],v[1]);
+		//printf("%0.30f,%0.30f,%0.30f,%0.30f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
+		//fprintf(fpt,"%0.30f,%0.30f,%0.30f,%0.30f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
         time = time + dt*back;
 
         if(potential==6){
@@ -135,7 +139,9 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 	}
 	if(integrator==0){ //if leapfrog, take another halfstep back in just velocity
 		dostep1(x,v,apar,potential,dt,sign);//dostep1(x,v,apar,potential,dt,back); //
-        if(potential==6){
+		//fprintf(fpt,"%0.30f,%0.30f,%0.30f,%0.30f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
+
+				if(potential==6){
             dostep1(xlmc,vlmc,apar_aux,4,dt,back);
             for(i=0;i<3;i++){
                 apar[12+i] = xlmc[i];
@@ -157,7 +163,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 			//x[j]=x[j]-dt*v[j]; //full step backwards in position?
 		//printf("cluster pos after first halfstep: %f,%f,%f\n",x[0],x[1],x[2]);
 		//printf("cluster vel after first halfstep: %f,%f,%f\n",v[0],v[1],v[2]);
-		//fprintf(fpt,"%f,%f,%f,%f\n",x[0],x[1],v[0],v[1]);
+		//fprintf(fpt,"%f,%f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
         if(potential==6){
             dostep1(xlmc,vlmc,apar_aux,4,dt,sign);
             for(j=0;j<3;j++)
@@ -184,7 +190,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		//Mcl-=dM; //decrease current mass
 
 		(*pt2dostep)(x,v,apar,potential,dt,sign); //move cluster forward
-		//fprintf(fpt,"%f,%f,%f,%f",x[0],x[1],v[0],v[1]);
+		//fprintf(fpt,"%f,%f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
         if(potential==6){
             (*pt2dostep)(xlmc,vlmc,apar_aux,4,dt,sign);
             for(j=0;j<3;j++)
@@ -218,7 +224,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 			t2n(vs, vp1, vp2, vp3, j);
 
 			//fprintf(fpt,",%f,%f,%f,%f,%f,%f,%f,%f",xm1[j],xm2[j],vm1[j],vm2[j],xp1[j],xp2[j],vp1[j],vp2[j]);
-
+			//printf("stars %i at step %i %f,%f,%f,%f,%f,%f,%f,%f",j,i,aukpc * xm1[j],aukpc * xm2[j],aukpc * vm1[j],aukpc * vm2[j],aukpc * xp1[j],aukpc * xp2[j],aukpc * vp1[j],aukpc * vp2[j]);
 
 		}
 
@@ -307,7 +313,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 				vp3[k]=v[2]*vtrail;
 				//printf("x trailing particle at ejection: %f,%f,%f\n",xp1[k],xp2[k],xp3[k]);
 				//printf("v trailing particle at ejection: %f,%f,%f\n",vp1[k],vp2[k],vp3[k]);
-				//fprintf(fpt,",%f,%f,%f,%f,%f,%f,%f,%f",xm1[k],xm2[k],vm1[k],vm2[k],xp1[k],xp2[k],vp1[k],vp2[k]);
+				//fprintf(fpt,"%0.20f,%0.20f,%0.20f,%0.20f,%0.20f,%0.20f,%0.20f,%0.20f\n",aukpc * xm1[k],aukpc * xm2[k],aukpc * vm1[k],aukpc * vm2[k],aukpc * xp1[k],aukpc * xp2[k],aukpc * vp1[k],aukpc * vp2[k]);
 				k++;
 
 				//printf("%f,%f,%f,%f\n",xm1[0],xm2[0],xp1[0],xp2[0]);
@@ -322,11 +328,12 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 
     if (integrator==0){ //final halfstep back in velocity if leapfrog
 		dostep1(x,v,apar,potential,dt,back);
-		fprintf(fpt,"%f,%f,%f,%f\n",x[0],x[1],v[0],v[1]);
-		for(j=0;j<k;j++) {
-			fprintf(fpt,"%f,%f,%f,%f,%f,%f,%f,%f\n",xm1[j],xm2[j],vm1[j],vm2[j],xp1[j],xp2[j],vp1[j],vp2[j]);
+		fprintf(fpt,"%f,%f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc *v[1]);
 
+		for(j=0;j<k;j++) {
+			fprintf(fpt,"%f,%f,%f,%f,%f,%f,%f,%f\n",aukpc * xm1[j],aukpc * xm2[j],aukpc * vm1[j],aukpc * vm2[j],aukpc * xp1[j],aukpc * xp2[j],aukpc * vp1[j],aukpc * vp2[j]);
 		}
+
 
 
 
@@ -551,10 +558,9 @@ void force(double *x, double *a, double *par, int potential)
 		// Point mass potential
 		// par = [Mtot]
 		r=sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]);
-
 		for(i=0;i<3;i++)
 			a[i]=-par[0]*x[i]/(r*r*r);
-		//printf("{%f,%f}", a[0],a[1]);
+		//printf("acceleration: {%f,%f}\n", a[0],a[1]);
 
 	}else if(potential==1){
 		// Logarithmic potential, as defined by Koposov et al. (2010)
@@ -585,6 +591,7 @@ void force(double *x, double *a, double *par, int potential)
 		a[0]=aux*(2*par[1]*x[0] + par[3]*x[1]);
 		a[1]=aux*(2*par[2]*x[1] + par[3]*x[0]);
 		a[2]=aux*(2*par[4]*x[2]);
+		//printf("acceleration: {%0.10f,%0.10f}\n", a[0],a[1]);
 
 	}else if(potential==4){
 		// Composite Galactic potential featuring a disk, bulge, and flattened NFW halo (from Johnston/Law/Majewski/Helmi)
@@ -822,7 +829,6 @@ void force_plummer(double *x, double *a, double Mcl)
 	// Assumes global definitions of cluster mass Mcl and radius Rcl
 	int i;
 	double r, raux;
-	Rcl = 0.25;
 
 	r=len(x); //magnitude of distance btwn cluster and particle
 	raux=pow(r*r+Rcl*Rcl, 1.5); //r squared plus plummer radius squared
@@ -873,6 +879,7 @@ void initpar(int potential, double *par, double *apar)
 		apar[3]=2*sinphi*cosphi*(1/(par[3]*par[3]) - 1/(par[4]*par[4]));
 		apar[4]=1/(par[5]*par[5]);
 		apar[5]=par[1];
+		printf("initialization of parameters: %f,%f,%f,%f,%f,%f\n",apar[0],apar[1],apar[2],apar[3],apar[4],apar[5]);
 
 	}else if(potential==0){
 		// Point mass potential, par = [Mtot]
@@ -1123,10 +1130,11 @@ int main (void) {
 	double M = 1;
 	int potential = 0;
 	int integrator = 0;
-  double Rcl = 20 * 0.001 * kpcau;
+  Rcl = 20 * 0.001 * kpcau;
 	double x0[3] = {50.0*kpcau,0,0}; //initial positions
-	double v0[3] = {0,0.5 * sqrt(4000000 *M_sun/len(x0)),0}; //initial vel
-	double par[1] = {4000000*M_sun};//double par[1] = {M_sun};
+	double v0[3] = {0,0.5 * sqrt(1000000000 * M_sun/len(x0)),0}; //initial vel
+	//double par[6] = {430.0 * pow(10,3) * mau * secyr, 19.5 * kpcau, 88.0, 0.855, 1.0, 1.2};//double par[1] = {M_sun};
+	double par[1] = {1000000000 * M_sun};
 	double dt = 1000000;
 	int sign = 1;
 	double *offset;
@@ -1153,19 +1161,10 @@ int main (void) {
 	FILE *fpt = fopen("ctest1.csv", "w+");
 	fprintf(fpt,"xcl,ycl,xvcl,yvcl,xlt,ylt,xvlt,yvlt,xtt,ytt,xvtt,yvtt\n");
 
-	stream(x0, v0, xm1, xm2,xm3, xp1, xp2, xp3, vm1, vm2, vm3, vp1, vp2, vp3, par, offset, 0, 0, N, M, 20000*M_sun,20000*M_sun, Rcl, dt, fpt);
+	stream(x0, v0, xm1, xm2,xm3, xp1, xp2, xp3, vm1, vm2, vm3, vp1, vp2, vp3, par, offset, potential, 0, N, M, 20000*M_sun,20000*M_sun, Rcl, dt, fpt);
 	//orbit(x0, v0, x1, x2, x3, v1, v2, v3, par, potential, integrator, N, dt, sign);
 
 	fclose(fpt);
 
-
-
-/*
-	double x[3] = {1,0,0};
-	double a[3] = {0,0,0};
-	force_plummer(x, a, 0.5 * M_sun);
-	for (int i = 0; i < 3; i++) {
-		printf("%f ,",a[i]);
-	} */
 
 }

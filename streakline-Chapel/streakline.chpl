@@ -4,6 +4,7 @@ const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
 const mau = 6.68458 * (10**(-12)); //meters to AU
 const kpcau = 2.063 * (10**8); //kpc to au
+const aukpc = 4.84814 * (10**(-9)); //au to kpcs
 const secyr = 60*60*24*365.24; //seconds to years
 config const integrator = 0;   //set Integrator to LF
 config const N = 500;   //set number of timesteps
@@ -66,26 +67,26 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
     if integrator == 0  { //if leapfrog
       //move velocity forward half a timestep
       halfstep(pos[0],vel[0],pot,dt,1.0);
-      myWritingChannel.write(pos[0][0],",",pos[0][1],",",vel[0][0],",",vel[0][1],"\n");
+      myWritingChannel.write(aukpc * pos[0][0],",", aukpc * pos[0][1],",",aukpc * vel[0][0],",",aukpc * vel[0][1],"\n");
       //writeln("pos cluster after first halfstep: ",pos[0]);
       //writeln("vel cluster after first halfstep: ",vel[0]);
     for i in 1..N-1 {//make N full steps in pos and vel forwards
       mcl -= dm;//decrease mass
 
       leapfrog(pos,vel,i,dt);
-      myWritingChannel.write(pos[i][0],",",pos[i][1],",",vel[i][0],",",vel[i][1]);
+      myWritingChannel.write(aukpc * pos[i][0],",",aukpc * pos[i][1],",",aukpc * vel[i][0],",",aukpc * vel[i][1]);
 
       for j in 1..k {
         stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
         stream_step(pos_trail[j], vel_trail[j], pos[i], dt);
 
-        myWritingChannel.write(",",pos_lead[j][0],",",pos_lead[j][1],",",vel_lead[j][0],",",vel_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],",",vel_trail[j][0],",",vel_trail[j][1]);
+        myWritingChannel.write(",",aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1]);
       }
 
       if i % M == 0 {
         k+=1;
         eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
-        myWritingChannel.write(",",pos_lead[k][0],",",pos_lead[k][1],",",vel_lead[k][0],",",vel_lead[k][1],",",pos_trail[k][0],",",pos_trail[k][1],",",vel_trail[k][0],",",vel_trail[k][1]);
+        myWritingChannel.write(",",aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1]);
         //writeln("after ejecting ", vel_lead[k]);
         //writeln(pos_trail[k]);
 
@@ -157,7 +158,7 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
 
   var Rj: 3*real = tidal_radius(pos_cl, vel_cl, om);//calculate tidal radius
   //initial position of particle is position of cluster plus or minus tidal radius
-  writeln("Rj: ",Rj);
+  //writeln("Rj: ",Rj);
   //pos_lead = pos_cl - (Rj * (pos_cl/r)); //multiplied by unit vector
   //pos_trail = pos_cl + (Rj * (pos_cl/r));
   pos_lead = pos_cl - Rj;
@@ -248,7 +249,7 @@ proc tidal_radius(pos_cl,vel_cl,omega) {
   //var dpot: 3*real = (a1 - a2)/(len(x1-x2));
   //writeln("len x1-x2 ",len(x1-x2));
   //writeln("a1-a2 ",a1-a2);
-  writeln("mcl ",mcl);
+  //writeln("mcl ",mcl);
   return un_vec*((mcl/abs(omega*omega + dpot))**(1.0/3.0));
 }
 

@@ -5,6 +5,7 @@
 
 
 double M_sun = 4 * pi *pi;
+const double aukpc = 4.84814 * (10^-9);
 
 
 
@@ -303,7 +304,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 				//printf("v trailing particle at ejection: %f,%f,%f\n",vp1[k],vp2[k],vp3[k]);
 				fprintf(fpt,",%f,%f,%f,%f,%f,%f,%f,%f",xm1[k],xm2[k],vm1[k],vm2[k],xp1[k],xp2[k],vp1[k],vp2[k]);
 				k++;
-				
+
 				//printf("%f,%f,%f,%f\n",xm1[0],xm2[0],xp1[0],xp2[0]);
 				//printf("%f,%f,%f\n",vm1[0],vm2[0],vm3[0]);
 	}
