@@ -6,7 +6,7 @@ double ran1(long *idum)
 	int j;
 	long k;
 	static long iy=0;
-	static long iv[NTAB];
+	static long iv[NTAB];//NTAB = 32
 	double temp;
 
 	if (*idum <= 0 || !iy) {

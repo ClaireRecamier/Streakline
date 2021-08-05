@@ -1,4 +1,5 @@
 use IO;
+use Math;
 
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
@@ -13,12 +14,12 @@ config const mcli: real = 20000 * Msun; //initial mass of cluster
 config const mclf: real = 20000 * Msun; //final mass of cluster
 config const M = 1; //particles are released every Mth timestep
 config const Rcl = 20 * 0.001 * kpcau; //radius of plummer core
-var pot = 0; //set galactic potential to that of NFW
+var pot = 3; //set galactic potential to that of NFW
 var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
 var k: int = 0; //record how many particles have been released
 var dm = (mcli - mclf)/N; //amount of mass released per timesteps
 var mcl: real = mcli; //current mass of cluster
-var cfile = open("test5.csv",iomode.cw); //create test.csv and open
+var cfile = open("test6.csv",iomode.cw); //create test.csv and open
 var myWritingChannel = cfile.writer(); //open writing channel to test.csv
 var calcpar: [0..5] real;
 
@@ -26,26 +27,15 @@ proc main () {
   //create array of tuples to hold position and velocity and velocity at each timestep
   var pos: [0..N] 3*real;
   var vel: [0..N] 3*real;
-  //hardcode initial position and velocity
-  pos[0]=(50.0*kpcau,0,0);
-  vel[0]=(0,0.5 * sqrt(1000000000 * Msun/len(pos[0])),0); //set velocity equal to half of centripetal velocity
 
   var pos_lead: [1..Ne] 3*real;
   var pos_trail: [1..Ne] 3*real;
   var vel_lead: [1..Ne] 3*real;
   var vel_trail: [1..Ne] 3*real;
 
-  /*
-  //hardcode values for stream particles
-  k = 1;
-  pos_lead[1] = (9,0,0);
-  vel_lead[1] = (0,sqrt(Msun/len(pos_lead[1])),0);
-  pos_trail[1] = (11,0,0);
-  vel_trail [1] = (0,sqrt(Msun/len(pos_trail[1])),0);
-  */
-
   //hardcode galactic potential parameters
-  var par: [0..5] real = [430.0 * (10**3) * mau * secyr, 19.5 * kpcau, 88.0, 0.855, 1.0, 1.2];
+  var par: [0..5] real = [430.0 * (10**3) * mau * secyr, 19.5 * kpcau, 90.0 * pi / 180, 0.855, 1.0 ,1.2]; //for c version of potential
+  //var par: [0..4] real = [430.0 * (10**3) * mau * secyr, 19.5 * kpcau, 88.0 * pi / 180, 0.855, 1.2]; //for paper version of potential
   if pot == 3 { //if using triaxial NFW potential
     //assuming par = [V, rhalo, phi, q_1, q_2, q_z]
     //calcpar = [GM, c1, c2, c3, c4, rhalo]
@@ -57,8 +47,24 @@ proc main () {
     calcpar[3] = 2*sinphi*cosphi*(1/(par[3]**2) - 1/(par[4]**2));
     calcpar[4] = 1/(par[5]*par[5]);
     calcpar[5] = par[1];
-    writeln("initializing param ",calcpar);
+    //writeln("initializing param ",calcpar);
   }
+
+
+  //hardcode initial position and velocity
+  pos[0]=(50.0*kpcau,0,0);
+  vel[0]=(0,0.5 * sqrt(calcpar[0]/len(pos[0])),0); //set velocity equal to half of centripetal velocity
+
+
+  /*
+  //hardcode values for stream particles
+  k = 1;
+  pos_lead[1] = (9,0,0);
+  vel_lead[1] = (0,sqrt(Msun/len(pos_lead[1])),0);
+  pos_trail[1] = (11,0,0);
+  vel_trail [1] = (0,sqrt(Msun/len(pos_trail[1])),0);
+  */
+
 
   myWritingChannel.write("x cluster,y cluster,x cluster vel,y cluster vel,x lead trail,y lead tail,x vel lead tail, y vel lead tail,x trail tail,y trail tail,x vel trail tail, y vel trail tail\n");
 
@@ -151,7 +157,6 @@ proc back_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead
   }
 }
 
-
 //procedure to advance ejected particles by a timestep
 proc stream_step(ref pos, ref vel, pos_cl, dt) {
   //update position of jth particle
@@ -243,10 +248,10 @@ proc force(pos,pot){
   if pot == 0 { //if using point mass potential
     r = len(pos);
     //acc = (-1,-1,-1)*(Msun * pos)/dist**3; //assumes the sun stays at origin
-    acc = (-1,-1,-1)*(1000000000 * Msun * pos)/r**3;
+    acc = (-1,-1,-1)*(100000000000 * Msun * pos)/r**3;
     //writeln("acc ",acc);
   }
-  else if pot == 3 { //NFW triaxial potential
+  else if pot == 3 { //NFW triaxial potential, C version
     //calcpar = [GM, c1, c2, c3, c4, rhalo]
     r = sqrt(calcpar[1]*pos[0]*pos[0] + calcpar[2]*pos[1]*pos[1] + calcpar[3]*pos[0]*pos[1] + calcpar[4]*pos[2]*pos[2]);
     var aux: real = 0.5 * calcpar[0] / (r**3) * (1.0/(1.0 + calcpar[5]/r)-log(1.0+r/calcpar[5]));

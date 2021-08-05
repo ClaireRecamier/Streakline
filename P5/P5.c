@@ -53,7 +53,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 
 	// Cluster size
 	Rcl = rcl;
-/*
+
 	// Position offset
 	dR = offset[0];
 
@@ -65,13 +65,14 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		r2=gasdev(&s1);
 		r3=gasdev(&s1);
 		dvl[i]=sqrt(r1*r1 + r2*r2 + r3*r3)*offset[1]/3.;
-
+		//printf("dvl %f\n",dvl[i]);
 		// Trailing tail dtvelocity offsets
 		r1=gasdev(&s1);
 		r2=gasdev(&s1);
 		r3=gasdev(&s1);
 		dvt[i]=sqrt(r1*r1 + r2*r2 + r3*r3)*offset[1]/3.;
-	} */
+		//printf("dvt %f\n",dvt[i]);
+	}
 
 	// Set up actual potential parameters;
 	Napar = par_perpotential[potential]; //index 0 in array par_potential = 1 (parameters per potential?)
@@ -227,7 +228,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 
 		}
 
-		/*
+/*
 				if(i%M==0){
 
 					// Release only at every Mth timestep
@@ -272,7 +273,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 
 				time = time + dt*sign;
 			}
-		*/
+*/
 
 		if (i % M == 0) {
 				//EJECT particle at Mth timestep
@@ -585,9 +586,11 @@ void force(double *x, double *a, double *par, int potential)
 		// Triaxial NFW halo potential, parameters similar to Law & Majewski (2010)
 		// par = [GM, c1, c2, c3, c4, rhalo]
 		r=sqrt(par[1]*x[0]*x[0] + par[2]*x[1]*x[1] + par[3]*x[0]*x[1] + par[4]*x[2]*x[2]);
+		//printf("r: %0.10f\n", r);
+
 		aux=0.5 * par[0] / (r*r*r) * (1./(1.+par[5]/r)-log(1.+r/par[5]));
 
-		a[0]=aux*(2*par[1]*x[0] + par[3]*x[1]);
+		a[0]=aux*(2*par[1]*x[0] + par[3]*x[1]); //
 		a[1]=aux*(2*par[2]*x[1] + par[3]*x[0]);
 		a[2]=aux*(2*par[4]*x[2]);
 		//printf("acceleration: {%0.10f,%0.10f}\n", a[0],a[1]);
@@ -1127,17 +1130,17 @@ int main (void) {
 
 	int N=6000;//6000
 	double M = 1;
-	int potential = 0;
+	int potential = 3;
 	int integrator = 0;
   Rcl = 20 * 0.001 * kpcau;
+	double par[6] = {417.0 * pow(10,3) * mau * secyr, 36.54 * kpcau, 90.0 * pi / 180, 1.0, 1.0, 0.94};//double par[1] = {M_sun};
 	double x0[3] = {50.0*kpcau,0,0}; //initial positions
-	double v0[3] = {0,0.5 * sqrt(1000000000 * M_sun/len(x0)),0}; //initial vel
-	//double par[6] = {430.0 * pow(10,3) * mau * secyr, 19.5 * kpcau, 88.0, 0.855, 1.0, 1.2};//double par[1] = {M_sun};
-	double par[1] = {1000000000 * M_sun};
+	double v0[3] = {0,0.5 * sqrt(par[0]*par[0]*par[1]/len(x0)),0}; //initial vel
+	//double par[1] = {1000000000 * M_sun};
 	double dt = 1000000;
 	int sign = 1;
-	double *offset;
 	double Ne = N/M;
+	double offset[2] = {1.5,1.5};
 	double *x1 = (double *)malloc(sizeof(double) * N);
 	double *x2 = (double *)malloc(sizeof(double) * N);
 	double *x3 = (double *)malloc(sizeof(double) * N);
@@ -1157,7 +1160,7 @@ int main (void) {
 	double *vp2 = (double *)malloc(sizeof(double) * Ne);
 	double *vp3 = (double *)malloc(sizeof(double) * Ne);
 
-	FILE *fpt = fopen("ctest1.csv", "w+");
+	FILE *fpt = fopen("ctest2.csv", "w+");
 	fprintf(fpt,"xcl,ycl,xvcl,yvcl,xlt,ylt,xvlt,yvlt,xtt,ytt,xvtt,yvtt\n");
 
 	stream(x0, v0, xm1, xm2,xm3, xp1, xp2, xp3, vm1, vm2, vm3, vp1, vp2, vp3, par, offset, potential, 0, N, M, 20000*M_sun,20000*M_sun, Rcl, dt, fpt);

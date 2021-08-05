@@ -238,16 +238,16 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 					vlead=(vtot-om*Rj[k])/vtot; //velocity of cluster, minus velocity of particle, divided by velocity of cluster?
 					vtrail=(vtot+om*Rj[k])/vtot;
 
-					dvl[k]/=r;
+					dvl[k]/=r;//bottom half of unit vector
 					dvt[k]/=r;
 
 					// Generate 2 new stream particles at the tidal radius
-					dRRj = dR*Rj[k];
+					dRRj = dR*Rj[k]; //position offset * tidal radius
 					// Inner particle (leading tail)
 					xm1[k]=x[0]*rm + dRRj*gasdev(&s1);
 					xm2[k]=x[1]*rm + dRRj*gasdev(&s1);
 					xm3[k]=x[2]*rm + dRRj*gasdev(&s1);
-					vm1[k]=v[0]*vlead - dvl[k]*x[0];
+					vm1[k]=v[0]*vlead - dvl[k]*x[0]; //top half of unit vector
 					vm2[k]=v[1]*vlead - dvl[k]*x[1];
 					vm3[k]=v[2]*vlead - dvl[k]*x[2];
 
