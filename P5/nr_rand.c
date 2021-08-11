@@ -6,17 +6,17 @@ double ran1(long *idum)
 	int j;
 	long k;
 	static long iy=0;
-	static long iv[NTAB];
+	static long iv[NTAB]; //NTAB = 32
 	double temp;
 
 	if (*idum <= 0 || !iy) {
 		if (-(*idum) < 1) *idum=1;
 		else *idum = -(*idum);
 		for (j=NTAB+7;j>=0;j--) {
-			k=(*idum)/IQ;
-			*idum=IA*(*idum-k*IQ)-IR*k;
+			k=(*idum)/IQ; //IQ = 127773
+			*idum=IA*(*idum-k*IQ)-IR*k; //IA = 16807
 			if (*idum < 0) *idum += IM;
-			if (j < NTAB) iv[j] = *idum;
+			if (j < NTAB) iv[j] = *idum; 
 		}
 		iy=iv[0];
 	}

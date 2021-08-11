@@ -19,9 +19,21 @@ var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
 var k: int = 0; //record how many particles have been released
 var dm = (mcli - mclf)/N; //amount of mass released per timesteps
 var mcl: real = mcli; //current mass of cluster
-var cfile = open("test6.csv",iomode.cw); //create test.csv and open
-var myWritingChannel = cfile.writer(); //open writing channel to test.csv
+var chfile = open("test21.csv",iomode.cw); //create test.csv and open
+var cfile1 = open("ctest6.csv",iomode.r); //open velocity offsets
+var cfile2 = open("ctest7.csv",iomode.r); //open position offsets
+var myWritingChannel = chfile.writer(); //open writing channel to test.csv
+var myReadingChannelv = cfile1.reader(); //open reading channel to test.csv
+var myReadingChannelp = cfile2.reader(); //open reading channel to test.csv
+var offset: [0..1] real = [0.2,0.2];
 var calcpar: [0..5] real;
+var tmp: string;
+myReadingChannelv.read(tmp);
+var dv = tmp.split(","); //entire file split by commas
+var dv_i: int = 0;
+myReadingChannelp.read(tmp);
+var dp = tmp.split(","); //entire file split by commas
+var dp_i: int = 0;
 
 proc main () {
   //create array of tuples to hold position and velocity and velocity at each timestep
@@ -34,8 +46,7 @@ proc main () {
   var vel_trail: [1..Ne] 3*real;
 
   //hardcode galactic potential parameters
-  var par: [0..5] real = [430.0 * (10**3) * mau * secyr, 19.5 * kpcau, 90.0 * pi / 180, 0.855, 1.0 ,1.2]; //for c version of potential
-  //var par: [0..4] real = [430.0 * (10**3) * mau * secyr, 19.5 * kpcau, 88.0 * pi / 180, 0.855, 1.2]; //for paper version of potential
+  var par: [0..5] real = [417.0 * (10**3) * mau * secyr, 36.54 * kpcau, 90.0 * pi / 180, 1.0, 1.0 ,0.94];
   if pot == 3 { //if using triaxial NFW potential
     //assuming par = [V, rhalo, phi, q_1, q_2, q_z]
     //calcpar = [GM, c1, c2, c3, c4, rhalo]
@@ -53,20 +64,12 @@ proc main () {
 
   //hardcode initial position and velocity
   pos[0]=(50.0*kpcau,0,0);
-  vel[0]=(0,0.5 * sqrt(calcpar[0]/len(pos[0])),0); //set velocity equal to half of centripetal velocity
-
-
-  /*
-  //hardcode values for stream particles
-  k = 1;
-  pos_lead[1] = (9,0,0);
-  vel_lead[1] = (0,sqrt(Msun/len(pos_lead[1])),0);
-  pos_trail[1] = (11,0,0);
-  vel_trail [1] = (0,sqrt(Msun/len(pos_trail[1])),0);
-  */
-
+  vel[0]=(0,0.5* sqrt(calcpar[0]/len(pos[0])),0); //(if pot 3) set velocity equal to half of centripetal velocity
+  //vel[0]=(0,0.5* sqrt(1000000000*Msun/len(pos[0])),0); // (if pot 0)set velocity equal to half of centripetal velocity
 
   myWritingChannel.write("x cluster,y cluster,x cluster vel,y cluster vel,x lead trail,y lead tail,x vel lead tail, y vel lead tail,x trail tail,y trail tail,x vel trail tail, y vel trail tail\n");
+
+
 
   //writeln("initial energy ", energy(pos,vel,0));
   back_orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
@@ -74,6 +77,12 @@ proc main () {
   vel[0] = vel[N-1];
   fwd_orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
   //writeln("final energy ", energy(pos,vel,N));
+  myWritingChannel.close();
+  myReadingChannelv.close();
+  myReadingChannelp.close();
+  chfile.close();
+  cfile1.close();
+  cfile2.close();
 }
 
 //orbit procedure: advances cluster in position and velocity using integrator of choice by N timesteps
@@ -84,53 +93,47 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
       //myWritingChannel.write(aukpc * pos[0][0],",",aukpc * pos[0][1],",",aukpc * vel[0][0],",",aukpc * vel[0][1],"\n");
       //writeln("pos cluster after first halfstep: ",pos[0]);
       //writeln("vel cluster after first halfstep: ",vel[0]);
-    for i in 1..N-1 {//make N full steps in pos and vel forwards
-      //mcl -= dm;//decrease mass
+      for i in 1..N-1 {//make N full steps in pos and vel forwards
+        //mcl -= dm;//decrease mass
 
-      leapfrog(pos,vel,i,dt,1.0);
-      //myWritingChannel.write(aukpc * pos[i][0],",",aukpc * pos[i][1],",",aukpc * vel[i][0],",",aukpc * vel[i][1],"\n");
+        leapfrog(pos,vel,i,dt,1.0);
+        //myWritingChannel.write(aukpc * pos[i][0],",",aukpc * pos[i][1],",",aukpc * vel[i][0],",",aukpc * vel[i][1],"\n");
 
-      for j in 1..k {
-        stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
-        stream_step(pos_trail[j], vel_trail[j], pos[i], dt);
-        //myWritingChannel.write(",",pos_lead[j][0],",",pos_lead[j][1],",",vel_lead[j][0],",",vel_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],",",vel_trail[j][0],",",vel_trail[j][1]);
-        //writeln("stars ",j," at ",i," step ",aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1]);
-      }
-
-      if i % M == 0 {
-        k+=1;
-        eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
-        //myWritingChannel.write(aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1],"\n");
-        //writeln("after ejecting ", vel_lead[k]);
-        //writeln(pos_trail[k]);
-      }
-      /* //print snapshot at 5000th timestep
-      if i == N-1000 {
         for j in 1..k {
-          myWritingChannel.write(pos_lead[j][0],",",pos_lead[j][1],",",vel_lead[j][0],",",vel_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],",",vel_trail[j][0],",",vel_trail[j][1],"\n");
+          stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
+          stream_step(pos_trail[j], vel_trail[j], pos[i], dt);
+          //myWritingChannel.write(",",pos_lead[j][0],",",pos_lead[j][1],",",vel_lead[j][0],",",vel_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],",",vel_trail[j][0],",",vel_trail[j][1]);
+          //writeln("stars ",j," at ",i," step ",aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1]);
         }
+
+        if i % M == 0 {
+          k+=1;
+          eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
+          myWritingChannel.write(aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1],"\n");
+          //writeln("after ejecting ", vel_lead[k]);
+          //writeln(pos_trail[k]);
+        }
+        /* //print snapshot at 5000th timestep
+        if i == N-1000 {
+          for j in 1..k {
+            myWritingChannel.write(pos_lead[j][0],",",pos_lead[j][1],",",vel_lead[j][0],",",vel_lead[j][1],",",pos_trail[j][0],",",pos_trail[j][1],",",vel_trail[j][0],",",vel_trail[j][1],"\n");
+          }
+        }
+        */
+        //myWritingChannel.write("\n");
+
       }
-      */
-      //myWritingChannel.write("\n");
-
-    }
-    //move velocity backward half a timestep
-    halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
-    //position of cluster at last timestep
-    myWritingChannel.write(aukpc * pos[N-1][0],",",aukpc * pos[N-1][1],",",aukpc * vel[N-1][0],",",aukpc * vel[N-1][1],"\n");
-
-    //positions of streams at last timestep
-    for j in 1..k {
-      myWritingChannel.write(aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1],"\n");
-    }
-
+      //move velocity backward half a timestep
+      halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
+      //position of cluster at last timestep
+      myWritingChannel.write(aukpc * pos[N-1][0],",",aukpc * pos[N-1][1],",",aukpc * vel[N-1][0],",",aukpc * vel[N-1][1],"\n");
+      /*
+      //positions of streams at last timestep
+      for j in 1..k {
+        myWritingChannel.write(aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1],"\n");
+      } */
   }
-  /*
-  else { //if RK
-    for i in 1..N do
-      RK();
-  }
-  */
+
 }
 
 proc back_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail)
@@ -175,7 +178,29 @@ proc stream_step(ref pos, ref vel, pos_cl, dt) {
 
 //procedure to eject particles
 proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_trail)
-{//calculate angular velocity of Cluster
+{
+
+  //initialize velocity offsets
+  var r1, r2, r3, dvl, dvt: real;
+  r1 = toreal(dv[dv_i]);
+  dv_i += 1;
+  r2 = toreal(dv[dv_i]);
+  dv_i += 1;
+  r3 = toreal(dv[dv_i]);
+  dv_i += 1;
+  //writeln("vel lead offset ",r1,",",r2,",",r3,"\n");
+  dvl = sqrt(r1**2 + r2**2 + r3**2)*offset[1]/3;
+  r1 = toreal(dv[dv_i]);
+  dv_i += 1;
+  r2 = toreal(dv[dv_i]);
+  dv_i += 1;
+  r3 = toreal(dv[dv_i]);
+  dv_i += 1;
+  //writeln("vel trail offset ",r1,",",r2,",",r3,"\n");
+  dvt = sqrt(r1**2 + r2**2 + r3**2)*offset[1]/3;
+  myWritingChannel.write(dvl,",",dvt,",");
+
+  //calculate angular velocity of Cluster
   //writeln("pos cl at ejection ",pos_cl, " vel cl at ejection", vel_cl);
   var omega: 3*real;
   omega = cross(pos_cl, vel_cl); //r x v
@@ -185,20 +210,46 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
   var om: real = len(omega);
 
   var Rj: 3*real = tidal_radius(pos_cl, vel_cl, om);//calculate tidal radius
+  var dRRj: real = len(Rj) * offset[0];
   //initial position of particle is position of cluster plus or minus tidal radius
   //writeln("Rj: ",Rj);
   //pos_lead = pos_cl - (Rj * (pos_cl/r)); //multiplied by unit vector
   //pos_trail = pos_cl + (Rj * (pos_cl/r));
-  pos_lead = pos_cl - Rj;
-  pos_trail = pos_cl + Rj;
 
-  //initial velocity of particle is angular velocity of cluster times pos cluster - tidal radius
-  //vel_lead = cross(omega, pos_lead); // v = omega cross r
-  //vel_trail = cross(omega, pos_trail);
+  r1 = toreal(dp[dp_i]);
+  dp_i += 1;
+  r2 = toreal(dp[dp_i]);
+  dp_i += 1;
+  r3 = toreal(dp[dp_i]);
+  dp_i += 1;
+  var ran_vec: 3*real = (r1,r2,r3);
+  pos_lead = pos_cl - Rj + (dRRj * ran_vec);
+
+  r1 = toreal(dp[dp_i]);
+  dp_i += 1;
+  r2 = toreal(dp[dp_i]);
+  dp_i += 1;
+  r3 = toreal(dp[dp_i]);
+  dp_i += 1;
+  ran_vec = (r1,r2,r3);
+  pos_trail = pos_cl + Rj + (dRRj * ran_vec);
+
+  //pos_lead = pos_cl - Rj;
+  //pos_trail = pos_cl + Rj;
 
   var mag_vcl: real = len(vel_cl);
-  vel_lead = vel_cl * (mag_vcl - len(Rj)* om)/(mag_vcl);
-  vel_trail = vel_cl * (mag_vcl + len(Rj)* om)/mag_vcl;
+  var uv_vel: 3*real = vel_cl / mag_vcl; // unit vector of vel vector
+  var uv_pos: 3*real = pos_cl / r; //unit vector of pos vector
+
+  vel_lead = uv_vel * (mag_vcl - len(Rj) * om) - (dvl * uv_pos);
+  vel_trail = uv_vel * (mag_vcl + len(Rj) * om) + (dvt * uv_pos);
+  /*
+  var mag_vcl: real = len(vel_cl);
+  var uv_vel: 3*real = vel_cl / mag_vcl; // unit vector of vel vector
+  vel_lead = uv_vel * (mag_vcl - len(Rj) * om);
+  vel_trail = uv_vel * (mag_vcl + len(Rj) * om);
+  */
+
   //writeln("cluster position at ejection ",pos_cl);
   //writeln("cluster velocity at ejection ",vel_cl);
   //writeln("pos_lead at ejection ",pos_lead);
@@ -307,4 +358,17 @@ proc energy(pos,vel,i){
   energy -= Msun * mcl / len(pos[i]);
 
   return energy;
+}
+
+proc toreal (str) {
+  //writeln(str);
+  var numb: [0..1] int;
+  var n = str.split(".");
+  numb[0] = abs(n[0]:int);
+  numb[1] = n[1]:int;
+  var n1: real = 1.0 * numb[1] / 10**n[1].size + numb[0];
+  if n[0][0] == '-' then n1 = n1 * -1.0;
+  //writeln(n1);
+  return n1;
+
 }

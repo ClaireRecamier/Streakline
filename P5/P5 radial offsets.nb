@@ -1,0 +1,244 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.3' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      7999,        236]
+NotebookOptionsPosition[      6865,        207]
+NotebookOutlinePosition[      7258,        223]
+CellTagsIndexPosition[      7215,        220]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Radial Offset", "Title",
+ CellChangeTimes->{{3.837515145501685*^9, 
+  3.8375151496434593`*^9}},ExpressionUUID->"e4b98243-79a1-4406-85d6-\
+e103493b3852"],
+
+Cell[CellGroupData[{
+
+Cell["streakline.c ", "Section",
+ CellChangeTimes->{{3.83751515794038*^9, 3.837515166172975*^9}, 
+   3.837598844338125*^9},ExpressionUUID->"a808d842-cd5e-4209-9d01-\
+88a1e29fa072"],
+
+Cell["\<\
+version 8 - initial positions of stars at ejection
+NFW parameters = {417.0 * pow(10,3) * mau * secyr, 36.54 * kpcau, 90.0 * pi / \
+180, 1.0, 1.0, 0.94}
+offset = 0.2, 0.2
+N = 6000, dt = 1,000,000 years, M = 1
+Mass of Cluster = 20,000 Msun (no mass loss)
+Initial Position of Cluster = 50 kpc,0,0
+Initial Velocity of Cluster = 0.5 * centripetal velocity
+Rcl = 20 pc = 4.126 * 10^6 AU \
+\>", "Text",
+ CellChangeTimes->{{3.837598833763082*^9, 3.837598885031437*^9}, {
+  3.837598922731222*^9, 3.837598923073955*^9}, {3.837599130867361*^9, 
+  3.837599141855774*^9}, {3.837600233774578*^9, 3.837600260989791*^9}, {
+  3.837600298165888*^9, 3.8376003060531883`*^9}, {3.8376008717601023`*^9, 
+  3.837600872097293*^9}, {3.8376011720019817`*^9, 
+  3.837601187740798*^9}},ExpressionUUID->"32884f2a-5a88-4439-94e2-\
+2d178b46d36b"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"c8cl", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/ctest8.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", "6001", ",", 
+       RowBox[{"1", ";;", "2"}]}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"c8lt", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/ctest8.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"1", ";;", "2"}]}], "}"}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"c8ltv", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/ctest8.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"3", ";;", "4"}]}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"c8tt", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/ctest8.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"5", ";;", "6"}]}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"c8ttv", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/ctest8.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"7", ";;", "8"}]}], "}"}]}], "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.8376012480131617`*^9, 3.837601279758271*^9}, {
+   3.837601317188931*^9, 3.8376013414997396`*^9}, 3.8376013827191687`*^9},
+ CellLabel->
+  "In[873]:=",ExpressionUUID->"50838b61-3393-48d2-b298-1dd0b7d92c97"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["streakline.chpl", "Section",
+ CellChangeTimes->{{3.837598859842279*^9, 
+  3.837598861738163*^9}},ExpressionUUID->"52cd9e88-80a5-44f4-bbb9-\
+7a5cbe14ead4"],
+
+Cell["\<\
+version 21 - initial positions of stars at ejection
+NFW parameters = {417.0 * pow(10,3) * mau * secyr, 36.54 * kpcau, 90.0 * pi / \
+180, 1.0, 1.0, 0.94}
+offset = 0.2, 0.2
+N = 6000, dt = 1,000,000 years, M = 1
+Mass of Cluster = 20,000 Msun (no mass loss)
+Initial Position of Cluster = 50 kpc,0,0
+Initial Velocity of Cluster = 0.5 * centripetal velocity
+Rcl = 20 pc = 4.126 * 10^6 AU \
+\>", "Text",
+ CellChangeTimes->{{3.8375988816584797`*^9, 3.837598883106412*^9}, {
+  3.837599143831366*^9, 3.837599148535224*^9}, {3.837600248966086*^9, 
+  3.837600264691908*^9}, {3.837600309077504*^9, 3.837600309765922*^9}, {
+  3.8376011740213223`*^9, 
+  3.837601174388998*^9}},ExpressionUUID->"ed9ca011-2d83-4277-9a52-\
+307bd8800136"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ch21cl", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/test21.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", "6001", ",", 
+       RowBox[{"1", ";;", "2"}]}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"ch21lt", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/test21.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"1", ";;", "2"}]}], "}"}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"ch21ltv", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/test21.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"3", ";;", "4"}]}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"ch21tt", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/test21.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"5", ";;", "6"}]}], "}"}]}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"ch21ttv", " ", "=", " ", 
+   RowBox[{"Import", "[", 
+    RowBox[{
+    "\"\</Users/clairerecamier/Desktop/Github/Streakline/P5/test21.csv\>\"", 
+     ",", 
+     RowBox[{"{", 
+      RowBox[{"\"\<Data\>\"", ",", 
+       RowBox[{"2", ";;", "6000"}], ",", 
+       RowBox[{"7", ";;", "8"}]}], "}"}]}], "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.837601674041418*^9, 
+  3.83760173116223*^9}},ExpressionUUID->"aecec8d0-3d11-41c6-8697-\
+fd5ebd654013"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{"50.0086`", ",", 
+   RowBox[{"-", "1.61672`*^-12"}]}], "}"}]], "Output",
+ CellChangeTimes->{{3.837601719022193*^9, 3.837601724732235*^9}},
+ CellLabel->
+  "Out[888]=",ExpressionUUID->"b8aeb938-bc4d-480c-aa78-a458dc29b95f"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{808, 686},
+WindowMargins->{{290, Automatic}, {Automatic, 33}},
+FrontEndVersion->"12.3 for Mac OS X ARM (64-bit) (July 9, 2021)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"ae6d1203-8ea5-4035-804e-05fafc6b56a2"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 158, 3, 98, "Title",ExpressionUUID->"e4b98243-79a1-4406-85d6-e103493b3852"],
+Cell[CellGroupData[{
+Cell[763, 29, 180, 3, 67, "Section",ExpressionUUID->"a808d842-cd5e-4209-9d01-88a1e29fa072"],
+Cell[946, 34, 825, 17, 196, "Text",ExpressionUUID->"32884f2a-5a88-4439-94e2-2d178b46d36b"],
+Cell[1774, 53, 1963, 56, 220, "Input",ExpressionUUID->"50838b61-3393-48d2-b298-1dd0b7d92c97"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3774, 114, 160, 3, 67, "Section",ExpressionUUID->"52cd9e88-80a5-44f4-bbb9-7a5cbe14ead4"],
+Cell[3937, 119, 729, 16, 196, "Text",ExpressionUUID->"ed9ca011-2d83-4277-9a52-307bd8800136"],
+Cell[CellGroupData[{
+Cell[4691, 139, 1871, 55, 220, "Input",ExpressionUUID->"aecec8d0-3d11-41c6-8697-fd5ebd654013"],
+Cell[6565, 196, 260, 6, 37, "Output",ExpressionUUID->"b8aeb938-bc4d-480c-aa78-a458dc29b95f"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
