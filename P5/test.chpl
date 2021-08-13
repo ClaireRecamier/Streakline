@@ -1,17 +1,23 @@
+use Random;
 use IO;
+var rfile = open("ran3.csv",iomode.cw); //create test.csv and open
+var channel = rfile.writer();
+var randStream = new RandomStream(real);
+var randStreamSeeded = new RandomStream(real, 0);
+var randsFromStream: [1..1000] real;
+randStream.fillRandom(randsFromStream);
+for i in 1..1000 {
+  randsFromStream[i] = 2.0 * (randsFromStream[i] - 0.5);
+  channel.write(randsFromStream[i],"\n");
+}
 
-var cfile = open("ctest6.csv",iomode.r); //create test.csv and open
-var myReadingChannel = cfile.reader(); //open reading channel to test.csv
-var r1,r2,r3: string;
-myReadingChannel.read(r1);
-var arr: string = "-1.04800";
-var numb: [0..1] int;
-var n = arr.split(".");
-numb[0] = abs(n[0]:int);
-numb[1] = n[1]:int;
-writeln((1.0 * numb[1]) / 10**(numb[1]:string).size);
-writeln(numb[0]);
-var n1: real = ((1.0 * numb[1]) / 10**(numb[1]:string).size) + numb[0];
-writeln(n1);
-if n[0][0] == '-' then n1 = n1 * (-1.0);
-writeln(n1);
+/*
+for i in 1..10000 {
+  if randsFromStream[i] < 0 then writeln(randsFromStream[i]);
+}
+
+randStreamSeeded.fillRandom(randsFromStream);
+for i in 1..10000 {
+  if randsFromStream[i] < 0 then writeln(randsFromStream[i]);
+}
+*/

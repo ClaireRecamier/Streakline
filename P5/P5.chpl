@@ -1,5 +1,6 @@
 use IO;
 use Math;
+use Random;
 
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
@@ -15,25 +16,15 @@ config const mclf: real = 20000 * Msun; //final mass of cluster
 config const M = 1; //particles are released every Mth timestep
 config const Rcl = 20 * 0.001 * kpcau; //radius of plummer core
 var pot = 3; //set galactic potential to that of NFW
-var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
+var Ne = ceil(N/M) : int; //number of particles released
 var k: int = 0; //record how many particles have been released
 var dm = (mcli - mclf)/N; //amount of mass released per timesteps
 var mcl: real = mcli; //current mass of cluster
-var chfile = open("test21.csv",iomode.cw); //create test.csv and open
-var cfile1 = open("ctest6.csv",iomode.r); //open velocity offsets
-var cfile2 = open("ctest7.csv",iomode.r); //open position offsets
+var chfile = open("test24.csv",iomode.cw); //create test.csv and open
 var myWritingChannel = chfile.writer(); //open writing channel to test.csv
-var myReadingChannelv = cfile1.reader(); //open reading channel to test.csv
-var myReadingChannelp = cfile2.reader(); //open reading channel to test.csv
-var offset: [0..1] real = [0.2,0.2];
+var offset: [0..1] real = [0.5,0.5];
 var calcpar: [0..5] real;
-var tmp: string;
-myReadingChannelv.read(tmp);
-var dv = tmp.split(","); //entire file split by commas
-var dv_i: int = 0;
-myReadingChannelp.read(tmp);
-var dp = tmp.split(","); //entire file split by commas
-var dp_i: int = 0;
+var randStream = new RandomStream(real);
 
 proc main () {
   //create array of tuples to hold position and velocity and velocity at each timestep
@@ -69,8 +60,6 @@ proc main () {
 
   myWritingChannel.write("x cluster,y cluster,x cluster vel,y cluster vel,x lead trail,y lead tail,x vel lead tail, y vel lead tail,x trail tail,y trail tail,x vel trail tail, y vel trail tail\n");
 
-
-
   //writeln("initial energy ", energy(pos,vel,0));
   back_orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
   pos[0] = pos[N-1];
@@ -78,11 +67,7 @@ proc main () {
   fwd_orbit(pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead, vel_trail);
   //writeln("final energy ", energy(pos,vel,N));
   myWritingChannel.close();
-  myReadingChannelv.close();
-  myReadingChannelp.close();
   chfile.close();
-  cfile1.close();
-  cfile2.close();
 }
 
 //orbit procedure: advances cluster in position and velocity using integrator of choice by N timesteps
@@ -97,7 +82,7 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
         //mcl -= dm;//decrease mass
 
         leapfrog(pos,vel,i,dt,1.0);
-        //myWritingChannel.write(aukpc * pos[i][0],",",aukpc * pos[i][1],",",aukpc * vel[i][0],",",aukpc * vel[i][1],"\n");
+        //myWritingChannel.write(aukpc * pos[i][0],",",aukpc * pos[i][1],",",aukpc * vel[i][0],",",aukpc * vel[i][1],",");
 
         for j in 1..k {
           stream_step(pos_lead[j], vel_lead[j], pos[i], dt);
@@ -109,7 +94,7 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
         if i % M == 0 {
           k+=1;
           eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
-          myWritingChannel.write(aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1],"\n");
+          //myWritingChannel.write(aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1],"\n");
           //writeln("after ejecting ", vel_lead[k]);
           //writeln(pos_trail[k]);
         }
@@ -126,12 +111,13 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
       //move velocity backward half a timestep
       halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
       //position of cluster at last timestep
-      myWritingChannel.write(aukpc * pos[N-1][0],",",aukpc * pos[N-1][1],",",aukpc * vel[N-1][0],",",aukpc * vel[N-1][1],"\n");
-      /*
+      //myWritingChannel.write(aukpc * pos[N-1][0],",",aukpc * pos[N-1][1],",",aukpc * vel[N-1][0],",",aukpc * vel[N-1][1],"\n");
+
       //positions of streams at last timestep
       for j in 1..k {
+        myWritingChannel.write(aukpc * pos[j][0],",",aukpc * pos[j][1],",",aukpc * vel[j][0],",",aukpc * vel[j][1],",");
         myWritingChannel.write(aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1],"\n");
-      } */
+      }
   }
 
 }
@@ -181,24 +167,14 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
 {
 
   //initialize velocity offsets
-  var r1, r2, r3, dvl, dvt: real;
-  r1 = toreal(dv[dv_i]);
-  dv_i += 1;
-  r2 = toreal(dv[dv_i]);
-  dv_i += 1;
-  r3 = toreal(dv[dv_i]);
-  dv_i += 1;
-  //writeln("vel lead offset ",r1,",",r2,",",r3,"\n");
-  dvl = sqrt(r1**2 + r2**2 + r3**2)*offset[1]/3;
-  r1 = toreal(dv[dv_i]);
-  dv_i += 1;
-  r2 = toreal(dv[dv_i]);
-  dv_i += 1;
-  r3 = toreal(dv[dv_i]);
-  dv_i += 1;
-  //writeln("vel trail offset ",r1,",",r2,",",r3,"\n");
-  dvt = sqrt(r1**2 + r2**2 + r3**2)*offset[1]/3;
-  myWritingChannel.write(dvl,",",dvt,",");
+  var dvl, dvt: real;
+
+  var ran_vec: 3*real = norm_rand(); //get new tuple of normalized random numbers
+  dvl = len(ran_vec)*offset[1]/3; //convert to maxwell distribution
+
+  ran_vec = norm_rand(); //get new tuple of normalized randomn\ numbers
+  dvt = len(ran_vec)*offset[1]/3; //convert to maxwell distribution
+  //myWritingChannel.write(dvl,",",dvt,",");
 
   //calculate angular velocity of Cluster
   //writeln("pos cl at ejection ",pos_cl, " vel cl at ejection", vel_cl);
@@ -216,22 +192,11 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
   //pos_lead = pos_cl - (Rj * (pos_cl/r)); //multiplied by unit vector
   //pos_trail = pos_cl + (Rj * (pos_cl/r));
 
-  r1 = toreal(dp[dp_i]);
-  dp_i += 1;
-  r2 = toreal(dp[dp_i]);
-  dp_i += 1;
-  r3 = toreal(dp[dp_i]);
-  dp_i += 1;
-  var ran_vec: 3*real = (r1,r2,r3);
+
+  ran_vec = norm_rand();//get new tuple of normalized random numbers
   pos_lead = pos_cl - Rj + (dRRj * ran_vec);
 
-  r1 = toreal(dp[dp_i]);
-  dp_i += 1;
-  r2 = toreal(dp[dp_i]);
-  dp_i += 1;
-  r3 = toreal(dp[dp_i]);
-  dp_i += 1;
-  ran_vec = (r1,r2,r3);
+  ran_vec = norm_rand(); //get new tuple of normalized random numbers
   pos_trail = pos_cl + Rj + (dRRj * ran_vec);
 
   //pos_lead = pos_cl - Rj;
@@ -370,5 +335,14 @@ proc toreal (str) {
   if n[0][0] == '-' then n1 = n1 * -1.0;
   //writeln(n1);
   return n1;
+}
 
+proc norm_rand () {
+  var arr: [0..2] real;
+  var rands: 3*real;
+  randStream.fillRandom(arr);
+  for i in 0..2 {
+    rands[i] = 3.5 * (arr[i] - 0.5);
+  }
+  return rands;
 }

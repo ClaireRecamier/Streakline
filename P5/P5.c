@@ -194,7 +194,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		//Mcl-=dM; //decrease current mass
 
 		(*pt2dostep)(x,v,apar,potential,dt,sign); //move cluster forward
-		//fprintf(fpt,"%f,%f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
+		fprintf(fpt,"%f,%f,%f,%f",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
         if(potential==6){
             (*pt2dostep)(xlmc,vlmc,apar_aux,4,dt,sign);
             for(j=0;j<3;j++)
@@ -293,7 +293,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 
     if (integrator==0){ //final halfstep back in velocity if leapfrog
 		dostep1(x,v,apar,potential,dt,back);
-		fprintf(fpt,"%f,%f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc *v[1]);
+		//fprintf(fpt,"%f,%f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc *v[1]);
 		/*
 		for(j=0;j<k;j++) {
 			fprintf(fpt,"%f,%f,%f,%f,%f,%f,%f,%f\n",aukpc * xm1[j],aukpc * xm2[j],aukpc * vm1[j],aukpc * vm2[j],aukpc * xp1[j],aukpc * xp2[j],aukpc * vp1[j],aukpc * vp2[j]);
