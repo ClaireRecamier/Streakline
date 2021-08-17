@@ -168,12 +168,10 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
 
   //initialize velocity offsets
   var dvl, dvt: real;
-
-  var ran_vec: 3*real = norm_rand(); //get new tuple of normalized random numbers
-  dvl = len(ran_vec)*offset[1]/3; //convert to maxwell distribution
-
-  ran_vec = norm_rand(); //get new tuple of normalized randomn\ numbers
-  dvt = len(ran_vec)*offset[1]/3; //convert to maxwell distribution
+  var r1, r2: 3*real
+  norm_rand(r1,r2); //get new tuple of normalized random numbers
+  dvl = len(r1)*offset[1]/3; //convert to maxwell distribution
+  dvt = len(r2)*offset[1]/3; //convert to maxwell distribution
   //myWritingChannel.write(dvl,",",dvt,",");
 
   //calculate angular velocity of Cluster
@@ -193,11 +191,9 @@ proc eject(pos_cl, vel_cl, ref pos_lead, ref vel_lead, ref pos_trail, ref vel_tr
   //pos_trail = pos_cl + (Rj * (pos_cl/r));
 
 
-  ran_vec = norm_rand();//get new tuple of normalized random numbers
-  pos_lead = pos_cl - Rj + (dRRj * ran_vec);
-
-  ran_vec = norm_rand(); //get new tuple of normalized random numbers
-  pos_trail = pos_cl + Rj + (dRRj * ran_vec);
+  norm_rand(r1, r2);//get new tuple of normalized random numbers
+  pos_lead = pos_cl - Rj + (dRRj * r1);
+  pos_trail = pos_cl + Rj + (dRRj * r2);
 
   //pos_lead = pos_cl - Rj;
   //pos_trail = pos_cl + Rj;
@@ -337,12 +333,18 @@ proc toreal (str) {
   return n1;
 }
 
-proc norm_rand () {
-  var arr: [0..2] real;
-  var rands: 3*real;
-  randStream.fillRandom(arr);
-  for i in 0..2 {
-    rands[i] = 3.5 * (arr[i] - 0.5);
-  }
-  return rands;
+proc norm_rand (ref r1, ref r2) {
+  var arr1: [0..2] real;
+  var arr2: [0..2] real;
+  randStream.fillRandom(arr1);
+  randStream.fillRandom(arr2);
+
+  r1[0] = sqrt(-2 * log(arr1[0])) * cos(2*pi*arr1[1]);
+  r1[1] = sqrt(-2 * log(arr1[0])) * sin(2*pi*arr1[1]);
+
+  r1[2] = sqrt(-2 * log(arr1[2])) * cos(2*pi*arr2[0]);
+  r2[0] = sqrt(-2 * log(arr1[2])) * sin(2*pi*arr2[0]);
+
+  r2[1] = sqrt(-2 * log(arr2[1])) * cos(2*pi*arr2[2]);
+  r2[2] = sqrt(-2 * log(arr2[1])) * sin(2*pi*arr2[2]);
 }
