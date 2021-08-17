@@ -1,7 +1,7 @@
 use IO;
 use Math;
 use Random;
-
+//PRINTS 6000th timestep
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
 const mau = 6.68458e-12; //meters to AU
@@ -20,9 +20,9 @@ var Ne = ceil(N/M) : int; //number of particles released
 var k: int = 0; //record how many particles have been released
 var dm = (mcli - mclf)/N; //amount of mass released per timesteps
 var mcl: real = mcli; //current mass of cluster
-var chfile = open("RadialOffsets/test22.csv",iomode.cw); //create test.csv and open
+var chfile = open("RadialOffsets/test23.csv",iomode.cw); //create test.csv and open
 var myWritingChannel = chfile.writer(); //open writing channel to test.csv
-var offset: [0..1] real = [0.2,0.2];
+var offset: [0..1] real = [1.0,1.0];
 var calcpar: [0..5] real;
 var randStream = new RandomStream(real);
 
@@ -94,7 +94,7 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
         if i % M == 0 {
           k+=1;
           eject(pos[i],vel[i],pos_lead[k], vel_lead[k], pos_trail[k], vel_trail[k]);
-          myWritingChannel.write(aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1],"\n");
+          //myWritingChannel.write(aukpc * pos_lead[k][0],",",aukpc * pos_lead[k][1],",",aukpc * vel_lead[k][0],",",aukpc * vel_lead[k][1],",",aukpc * pos_trail[k][0],",",aukpc * pos_trail[k][1],",",aukpc * vel_trail[k][0],",",aukpc * vel_trail[k][1],"\n");
           //writeln("after ejecting ", vel_lead[k]);
           //writeln(pos_trail[k]);
         }
@@ -111,14 +111,14 @@ proc fwd_orbit (pos, vel, pot, integrator, N, dt, pos_lead, pos_trail, vel_lead,
       //move velocity backward half a timestep
       halfstep(pos[N-1],vel[N-1],pot,dt,-1.0);
       //position of cluster at last timestep
-      myWritingChannel.write(aukpc * pos[N-1][0],",",aukpc * pos[N-1][1],",",aukpc * vel[N-1][0],",",aukpc * vel[N-1][1],"\n");
-      /*
+      //myWritingChannel.write(aukpc * pos[N-1][0],",",aukpc * pos[N-1][1],",",aukpc * vel[N-1][0],",",aukpc * vel[N-1][1],"\n");
+
       //positions of streams at last timestep
       for j in 1..k {
         myWritingChannel.write(aukpc * pos[j][0],",",aukpc * pos[j][1],",",aukpc * vel[j][0],",",aukpc * vel[j][1],",");
         myWritingChannel.write(aukpc * pos_lead[j][0],",",aukpc * pos_lead[j][1],",",aukpc * vel_lead[j][0],",",aukpc * vel_lead[j][1],",",aukpc * pos_trail[j][0],",",aukpc * pos_trail[j][1],",",aukpc * vel_trail[j][0],",",aukpc * vel_trail[j][1],"\n");
       }
-      */
+
   }
 
 }

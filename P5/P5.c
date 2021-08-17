@@ -2,7 +2,7 @@
 #include "nr_rand.c"
 #include "utility.c"
 #include <stdio.h>
-
+//PRINTGS 6000th TIMESTEP
 
 const double M_sun = 4 * pi *pi;
 const double mau = 0.00000000000668458; //meters to AU
@@ -194,7 +194,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 		//Mcl-=dM; //decrease current mass
 
 		(*pt2dostep)(x,v,apar,potential,dt,sign); //move cluster forward
-		fprintf(fpt,"%f,%f,%f,%f",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
+		//fprintf(fpt,"%f,%f,%f,%f",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc * v[1]);
         if(potential==6){
             (*pt2dostep)(xlmc,vlmc,apar_aux,4,dt,sign);
             for(j=0;j<3;j++)
@@ -251,7 +251,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 					vlead=(vtot-om*Rj[k])/vtot; //velocity of cluster, minus velocity of particle, divided by velocity of cluster?
 					vtrail=(vtot+om*Rj[k])/vtot;
 
-					fprintf(fpt,"%f,%f,",dvl[k],dvt[k]);
+					fprintf(fpt,"%0.20f,%0.20f,",dvl[k],dvt[k]);
 					dvl[k]/=r;
 					dvt[k]/=r;
 
@@ -281,7 +281,7 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
 					vp1[k]=v[0]*vtrail + dvt[k]*x[0];
 					vp2[k]=v[1]*vtrail + dvt[k]*x[1];
 					vp3[k]=v[2]*vtrail + dvt[k]*x[2];
-					fprintf(fpt,"%f,%f,%0.9f,%0.9f,%f,%f,%f,%f\n",aukpc * xm1[k],aukpc * xm2[k],aukpc * vm1[k],aukpc * vm2[k],aukpc * xp1[k],aukpc * xp2[k],aukpc * vp1[k],aukpc * vp2[k]);
+					//fprintf(fpt,"%f,%f,%0.9f,%0.9f,%f,%f,%f,%f\n",aukpc * xm1[k],aukpc * xm2[k],aukpc * vm1[k],aukpc * vm2[k],aukpc * xp1[k],aukpc * xp2[k],aukpc * vp1[k],aukpc * vp2[k]);
 					k++;
 
 				}
@@ -294,11 +294,11 @@ int stream(double *x0, double *v0, double *xm1, double *xm2, double *xm3, double
     if (integrator==0){ //final halfstep back in velocity if leapfrog
 		dostep1(x,v,apar,potential,dt,back);
 		//fprintf(fpt,"%f,%f,%f,%f\n",aukpc * x[0],aukpc * x[1],aukpc * v[0],aukpc *v[1]);
-		/*
+
 		for(j=0;j<k;j++) {
-			fprintf(fpt,"%f,%f,%f,%f,%f,%f,%f,%f\n",aukpc * xm1[j],aukpc * xm2[j],aukpc * vm1[j],aukpc * vm2[j],aukpc * xp1[j],aukpc * xp2[j],aukpc * vp1[j],aukpc * vp2[j]);
+			fprintf(fpt,"%0.20f,%0.20f,%f,%f,%0.20f,%0.20f,%f,%f,%0.20f,%0.20f\n",aukpc * xc1[j],aukpc * xc2[j],aukpc * xm1[j],aukpc * xm2[j],aukpc * vm1[j],aukpc * vm2[j],aukpc * xp1[j],aukpc * xp2[j],aukpc * vp1[j],aukpc * vp2[j]);
 		}
-		*/
+
 
 
 
@@ -1105,7 +1105,7 @@ int main (void) {
 	double dt = 1000000;
 	int sign = 1;
 	double Ne = N/M;
-	double offset[2] = {0.2,0.2};
+	double offset[2] = {1.0,1.0};
 	double *x1 = (double *)malloc(sizeof(double) * N);
 	double *x2 = (double *)malloc(sizeof(double) * N);
 	double *x3 = (double *)malloc(sizeof(double) * N);
@@ -1125,9 +1125,9 @@ int main (void) {
 	double *vp2 = (double *)malloc(sizeof(double) * Ne);
 	double *vp3 = (double *)malloc(sizeof(double) * Ne);
 
-	FILE *fpt = fopen("ctest8.csv", "w+");
-	FILE *fpt1 = fopen("ctest6.csv", "w+");
-	FILE *fpt2 = fopen("ctest7.csv", "w+");
+	FILE *fpt = fopen("RadialOffsets/ctest9.csv", "w+");
+	FILE *fpt1 = fopen("RadialOffsets/ctest6.csv", "w+");
+	FILE *fpt2 = fopen("RadialOffsets/ctest7.csv", "w+");
 	fprintf(fpt,"xcl,ycl,xvcl,yvcl,xlt,ylt,xvlt,yvlt,xtt,ytt,xvtt,yvtt\n");
 
 	stream(x0, v0, xm1, xm2,xm3, xp1, xp2, xp3, vm1, vm2, vm3, vp1, vp2, vp3, par, offset, potential, 0, N, M, 20000*M_sun,20000*M_sun, Rcl, dt, fpt,fpt1,fpt2);
