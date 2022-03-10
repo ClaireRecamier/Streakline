@@ -1,0 +1,37 @@
+# Simulation parameters go here.
+Ngrid=128
+Lbox=2.0 # Code units
+initialSimTime = 0.0
+duration=0.1
+
+# Number of saves, and how often to save the full
+# wavefunction
+numSaves=10
+savePsiFactor=1
+
+# This points at the soliton profile
+solitonProfile="../../soliton.h5"
+
+# Define sponge
+useSponge=true
+SpongeThickness=1
+
+# Isolated boundary or not
+isolatedBoundary=true
+
+# Scale the default time step by this integer factor
+# Optional
+TimeStepFactor=1
+
+# Where to save things
+# Top level directory (in the case below, TestOutput) must exist.
+saveFile="../../Outputs/test"
+clobberSave=true
+
+# Define the solitons below, each in their own section.
+[[solitons]]
+pos=[0.0, 0.0, 0.0]
+vel=[0.0, 0.0, 0.0]
+mass=25
+phase=0
+
