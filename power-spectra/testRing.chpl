@@ -15,19 +15,19 @@ const G = 6.67430e-11 * ((1e-3)**3); //G in km^3 / (kg * sec^2)
 //setup constants
 config const r0 = 15.0 * kpckm; // radius of ring, in km
 config const integrator = 0;   //set Integrator to LF
-config const N = 6000;//6000 set number of timesteps to equal total of 6 Gyr
+config const N = 1000;//6000 set number of timesteps to equal total of 6 Gyr
 var dt = 1000000.0 * secyr; //set timestep to seconds per Myr
 config const offsetOption = 0; //0 = no radial offsets, 1 = using C generated random numbers, 2 = generating own random numbers
-config const Ne = 10; //number of particles in ring
+config const Ne = 100; //number of particles in ring
 config const nbins = 4;
 var pot = 3; //set galactic potential to that of NFW
 var period: real = 0.0;
 
 var k: int = 0; //record how many particles have been released
-var chfile = open("test6.csv",iomode.cw); //create test.csv and open
-var SDfile = open("SD6.csv",iomode.cw); //create test.csv and open
-var AMfile = open("AM6.csv",iomode.cw); //create test.csv and open
-var PSfile = open("PS6.csv",iomode.cw); //create test.csv and open
+var chfile = open("../mathematica/test2.csv",iomode.cw); //create test.csv and open
+var SDfile = open("../mathematica/SD2.csv",iomode.cw); //create test.csv and open
+var AMfile = open("../mathematica/AM2.csv",iomode.cw); //create test.csv and open
+var PSfile = open("../mathematica/PS2.csv",iomode.cw); //create test.csv and open
 var PSWritingChannel = PSfile.writer(); //open writing channel to test.csv
 var SDWritingChannel = SDfile.writer(); //open writing channel to test.csv
 var WritingChannel = chfile.writer(); //open writing channel to test.csv
@@ -46,7 +46,9 @@ proc main () {
 
   //hardcode galactic potential parameters
   var calcpar: [0..5] real;
-  var par: [0..5] real = [200.0, 10.0 * kpckm, 90.0 * pi / 180, 1.0, 1.0 ,1.0];
+  //var par: [0..5] real = [200.0, 10.0 * kpckm, 90.0 * pi / 180, 1.0, 1.0 ,1.0];
+  var par: [0..5] real = [417.0, 36.54 * kpckm, 90.0 * pi / 180, 1.0, 1.0 ,1.0];
+
   if pot == 3 { //if using triaxial NFW potential
     //assuming par = [V, rhalo, phi, q_1, q_2, q_z]
     //calcpar = [GM, c1, c2, c3, c4, rhalo]
@@ -65,14 +67,14 @@ proc main () {
     period = 2 * pi * r0 / sqrt(len(acc) * r0); //in seconds; 2pi * r/v
     //
     //writeln("r0 ", r0);
-    //writeln("period ",period);
+    writeln("period ",period);
     magVel = sqrt(len(acc) * r0) * period / r0;
     //magVel = 417.0 * period / r0;
     //writeln(magVel);
     calcpar[0] = calcpar[0] * (period ** 2)/ (r0 ** 3); //GM becomes dimensionless
-    writeln("GM ", calcpar[0]);
+    //writeln("GM ", calcpar[0]);
     dt = dt / period; //divide dt by period to make it dimensionless
-    writeln("dt ",dt);
+    //writeln("dt ",dt);
     //writeln("initializing param ",calcpar);
     //writeln("c1 " , calcpar[1], " c2 ",calcpar[2]," c3 ",calcpar[3], " c4 ",calcpar[4]);
   }
@@ -82,7 +84,7 @@ proc main () {
     magVel = sqrt(calcpar[0]/r0) * period / r0; //unitless centripetal velocity
     calcpar[0] = calcpar[0] * (period ** 2)/ (r0 ** 3); //GM becomes dimensionless
     dt = dt / (period * 10); //dimensionless dt
-    writeln("dt ",dt);
+    //writeln("dt ",dt);
   }
 
   //initialize initial position and velocity of every particle in ring
@@ -255,9 +257,6 @@ proc stream_step(ref pos, ref vel, dt, calcpar) {
   //writeln("magnitude velocity: ",len(vel));
   //writeln("magnitude position: ",len(pos));
   //writeln(a[0]*vel[0] + a[1]*vel[1] + a[2]*vel[2]);
-
-
-
 }
 
 proc cross((x1,y1,z1),(x2,y2,z2)) {

@@ -1,7 +1,7 @@
 use IO;
 use Math;
 use Random;
-
+//DIMENSIONFULL version
 //math constants
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
