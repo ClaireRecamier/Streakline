@@ -1,7 +1,7 @@
 use IO;
 use Math;
 use Random;
-use HDF5;
+//use HDF5;
 //DIMENSIONLESS VERSION
 //math constants
 const pi = 3.141592653589793;
@@ -10,8 +10,8 @@ const mau = 6.68458e-12; //meters to AU
 const kmkpc = 3.24078e-17;
 const kpcau = 2.063 * (10**8); //kpc to au
 const aukpc = 4.84814e-9;
-const secyr: real = 60*60*24*365.24; //seconds to years
-const yrsec: real = 1/secyr;
+const yrsec: real = 60*60*24*365.24; //years to seconds
+const secyr: real = 1 / yrsec;
 const kpckm = 1.0 / kmkpc;
 const G = 6.67430e-11 * ((1e-3)**3); //G in km^3 / (kg * sec^2)
 const hbar = 1.0545718e-34; //((m^2)*(kg/s))
@@ -35,10 +35,13 @@ var period: real = 0.0;
 //calculate potential at every point, output to file
 //box ranges from x(-1.5,1.5) y(-1.5,1.5) z(-1.5,1.5)
 proc pot_box(calcpar,pot) { //creates acceleration box in km/seconds squared
+  //var nfwbox = open("mathematica/nfwbox2.csv",iomode.cw); //create test.csv and open
   var nfwbox = open("nfwbox.csv",iomode.cw); //create test.csv and open
+
   var boxchannel = nfwbox.writer(); //open writing channel to test.csv
 
-  var par: [0..5] real = [toCodeLength(417.0 * kmkpc)/toCodeTime(1/secyr), toCodeLength(36.54), 90.0 * pi / 180, 1.0, 1.0 ,1.0];
+  var par: [0..5] real = [toCodeLength(417.0 * kmkpc)/toCodeTime(secyr), toCodeLength(36.54), 90.0 * pi / 180, 1.0, 1.0 ,1.0];
+
   if pot == 3 { //if using triaxial NFW potential
     //assuming par = [V, rhalo, phi, q_1, q_2, q_z]
     //calcpar = [GM, c1, c2, c3, c4, rhalo]
@@ -51,12 +54,14 @@ proc pot_box(calcpar,pot) { //creates acceleration box in km/seconds squared
     calcpar[4] = 1/(par[5]*par[5]);
     calcpar[5] = par[1];
     var acc: 3*real;
-    writeln("codeunits GM",calcpar[0]);
-    writeln("realunits GM ",calcpar[0] * (38.36**3) * (kpckm**3) / (75.4 * 10**9 * yrsec)**2);
+    //writeln("codeunits GM ",calcpar[0]);
+    //writeln("GM in km cubed/sec squared",calcpar[0] * (38.36**3) * (kpckm**3) / (75.4 * 10**9 * yrsec)**2);
+    //writeln("GM in km cubed/sec squared",calcpar[0] * (38.36**3) * (kpckm**3) / (75.4 * 10**9 * yrsec)**2);
+
     //acc = force(r0 * pos[j],pot,calcpar); //convert pos to dimensions and get force
     acc = force((r0,0.0,0.0),pot,calcpar);
-    writeln("codeunits acc ",acc[0]);
-    writeln(acc[0]*38.36*kpckm /(75.4*10**yrsec)**2);
+    //writeln("codeunits acc ",acc[0]);
+    //writeln(acc[0]*38.36*kpckm /(75.4*10**yrsec)**2);
     //calcpar[5] = par[1] / r0; //Rhalo becomes dimensionless
     period = 2 * pi * r0 / sqrt(len(acc) * r0); //in code units; 2pi * r/v
 
@@ -70,7 +75,8 @@ proc pot_box(calcpar,pot) { //creates acceleration box in km/seconds squared
   else if pot == 0 {
     calcpar[0] = G * 1000000000.0 * (1.989e30); //GM in km^3 / sec^2
   }
-  //create box
+
+  //create 128 box
   //var dr: real = (40.0/15.0 * kpckm)/128.0; //length / step
   var dr: real = (toCodeLength(40.0))/128.0; //unitless: range/nsteps
   var x, y, z: real = 0.0;
@@ -87,6 +93,8 @@ proc pot_box(calcpar,pot) { //creates acceleration box in km/seconds squared
       boxchannel.write("\n");
     }
   }
+
+
   boxchannel.close();
   nfwbox.close();
 
@@ -125,7 +133,9 @@ proc init_ring (pos, vel, AM, SD, PS, calcpar,WritingChannel,AMWritingChannel,PS
   //acc = force((1.0,0.0,0.0),pot,calcpar);
   //magVel = sqrt(len(acc) * r0) * period / r0;
   //magVel = sqrt(len(acc) * r0); //already dimensionless
-  magVel = sqrt(len(acc));
+  magVel = sqrt(len(acc)*r0);
+  //magVel = sqrt(len(acc));
+  //writeln("magVel",magVel);
 
   //var velAngle: real;
   for j in 1..Ne { //Ne=number of desired particles
@@ -140,8 +150,10 @@ proc init_ring (pos, vel, AM, SD, PS, calcpar,WritingChannel,AMWritingChannel,PS
 
     velAngle = (pi / 2.0) - posAngle; //angles are complementary
 
-    vel[j][0] = r0 * magVel * cos(velAngle); //dimensionless
-    vel[j][1] = r0 * -1.0 * magVel * sin(velAngle);
+    //vel[j][0] = r0 * magVel * cos(velAngle); //dimensionless
+    //vel[j][1] = r0 * -1.0 * magVel * sin(velAngle);
+    vel[j][0] = magVel * cos(velAngle); //dimensionless
+    vel[j][1] = -1.0 * magVel * sin(velAngle);
     vel[j][2] = 0.0;
 
     AM[j] = angMom(pos[j],vel[j]);
@@ -245,6 +257,7 @@ proc stream_step(ref pos, ref vel, dt, calcpar,WritingChannel) {
 proc search_force(pos){
   var nfwbox = open("nfwbox.csv",iomode.r); // open box
   var boxchannel = nfwbox.reader(); //open reading channel
+
   var dr: real = 128.0 / (toCodeLength(40.0)); //nsteps / range(made dimensionless)
   //writeln(dr);
   var tmp: string;
@@ -253,14 +266,16 @@ proc search_force(pos){
   //determine column number from z position
   var col: int = floor(abs((toCodeLength(-20.0)) - pos[2]) * dr): int;
   var row: real = floor(abs((toCodeLength(-20.0)) - pos[0]) * dr);
+  //writeln("from x position, before taking floor: ",(toCodeLength(-20.0) - pos[0])*dr);
+  //writeln("from x position ",row);
   //determine row number from x and y positions
-  row = 128 * row; //row = 10 * row;
+  row = 128 * row;
   row += (floor(abs(toCodeLength(-20.0) - pos[1]) * dr));
   var frow: int = row: int; //final row number
   //writeln(frow);
   //writeln(col);
   //writeln(pos);
-  writeln("row ",frow,"col ",col);
+  //writeln("final row ",frow,"col ",col);
   for i in 1..frow{
     boxchannel.readln(tmp);
   }
@@ -349,12 +364,12 @@ proc pow_spec (pos,vel, PS,PSWritingChannel) {//gets computed at each timstep
   PSWritingChannel.write("\n");
 }
 
-proc toSeconds (l) { //converts time from code units to seconds
+proc toSeconds (l) { //not in use
   var a: real = ((8 * pi)/(3* H0**2 *omegaM0))**0.5;
   return a / l**2;
 }
 
-proc toMeters (l) { //converts length from code units to meters
+proc toMeters (l) { //not in use
   var a: real = (8 * pi * (hbar**2))/(3 * (maxion**2) * (H0**2) * omegaM0);
   return (a**0.25) / l;
 }
@@ -367,7 +382,6 @@ proc toCodeLength(kpc){
 }
 //update positions at every timestep based on potential box
 
-
 proc main(){
   //create array of tuples to hold position and velocity and velocity at each timestep
   var pos: [1..Ne] 3*real;
@@ -377,30 +391,23 @@ proc main(){
   var PS: [1..nbins] real; //whole array gets updated at each timestep
   //hardcode galactic potential parameters
   var calcpar: [0..5] real;
-  /*
-  var chfile = open("mathematica/bp2.csv",iomode.cw); //create test.csv and open
-  var SDfile = open("mathematica/SD2.csv",iomode.cw); //create test.csv and open
-  var AMfile = open("mathematica/AM2.csv",iomode.cw); //create test.csv and open
-  var PSfile = open("mathematica/PS2.csv",iomode.cw); //create test.csv and open
+
+  var chfile = open("mathematica/bp5.csv",iomode.cw); //create test.csv and open
+  var SDfile = open("mathematica/SD5.csv",iomode.cw); //create test.csv and open
+  var AMfile = open("mathematica/AM5.csv",iomode.cw); //create test.csv and open
+  var PSfile = open("mathematica/PS5.csv",iomode.cw); //create test.csv and open
   var PSWritingChannel = PSfile.writer(); //open writing channel to test.csv
   var SDWritingChannel = SDfile.writer(); //open writing channel to test.csv
   var WritingChannel = chfile.writer(); //open writing channel to test.csv
   var AMWritingChannel = AMfile.writer(); //open writing channel to test.csv
-  */
   pot_box(calcpar,pot);
   writeln("created box");
-  //var a = force((r0,0.0,0.0),pot,calcpar);
-  //writeln(a[0]*38.36*kpckm*(75.4*10**9*secyr)**2);
-  var b: 3*real = (r0,0,0);
-  var c: 3*real =  search_force(b);
-  writeln(c);
-  writeln(c*38.36*kpckm*(75.4*10**9*secyr)**2);
-  /*
+
   //initialize initial position and velocity of every particle in ring
   init_ring(pos, vel, AM, SD, PS, calcpar, WritingChannel,AMWritingChannel,PSWritingChannel);
   //dt = dt / period;
   writeln("initialized ring");
-  //
+
   fwd_orbit(pos, vel, AM, SD, PS, pot, integrator, N, dt, calcpar,WritingChannel,SDWritingChannel,AMWritingChannel,PSWritingChannel);
   WritingChannel.close();
   SDWritingChannel.close();
@@ -409,5 +416,5 @@ proc main(){
   PSfile.close();
   AMfile.close();
   SDfile.close();
-  chfile.close(); */
+  chfile.close();
 }
