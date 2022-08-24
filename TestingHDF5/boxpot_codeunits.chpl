@@ -392,10 +392,10 @@ proc main(){
   //hardcode galactic potential parameters
   var calcpar: [0..5] real;
 
-  var chfile = open("mathematica/bp5.csv",iomode.cw); //create test.csv and open
-  var SDfile = open("mathematica/SD5.csv",iomode.cw); //create test.csv and open
-  var AMfile = open("mathematica/AM5.csv",iomode.cw); //create test.csv and open
-  var PSfile = open("mathematica/PS5.csv",iomode.cw); //create test.csv and open
+  var chfile = open("mathematica/bp12.csv",iomode.cw); //create test.csv and open
+  var SDfile = open("mathematica/SD12.csv",iomode.cw); //create test.csv and open
+  var AMfile = open("mathematica/AM12.csv",iomode.cw); //create test.csv and open
+  var PSfile = open("mathematica/PS12.csv",iomode.cw); //create test.csv and open
   var PSWritingChannel = PSfile.writer(); //open writing channel to test.csv
   var SDWritingChannel = SDfile.writer(); //open writing channel to test.csv
   var WritingChannel = chfile.writer(); //open writing channel to test.csv
