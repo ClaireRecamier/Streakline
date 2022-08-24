@@ -246,8 +246,8 @@ proc search_force(pos){
   //determine column number from z position
   var col: int = floor(abs((-20.0/15.0) - pos[2]) * dr): int;
   var row: real = floor(abs((-20.0/15.0) - pos[0]) * dr);
-  writeln("from x position before flooring" , (abs((-20.0/15.0) - pos[0]) * dr));
-  writeln("from x position " , row);
+  //writeln("from x position before flooring" , (abs((-20.0/15.0) - pos[0]) * dr));
+  //writeln("from x position " , row);
   //determine row number from x and y positions
   row = 128 * row; //row = 10 * row;
   row += (floor(abs((-20.0/15.0) - pos[1]) * dr));
@@ -255,7 +255,7 @@ proc search_force(pos){
   //writeln(frow);
   //writeln(col);
   //writeln(pos);
-  writeln("final row ",frow,"col ",col);
+  //writeln("final row ",frow,"col ",col);
   for i in 1..frow{
     boxchannel.readln(tmp);
   }
@@ -356,10 +356,15 @@ proc main(){
   //hardcode galactic potential parameters
   var calcpar: [0..5] real;
 
-  var chfile = open("../TestingHDF5/mathematica/bp6.csv",iomode.cw); //create test.csv and open
-  var SDfile = open("../TestingHDF5/mathematica/bpSD6.csv",iomode.cw); //create test.csv and open
-  var AMfile = open("../TestingHDF5/mathematica/bpAM6.csv",iomode.cw); //create test.csv and open
-  var PSfile = open("../TestingHDF5/mathematica/bpPS6.csv",iomode.cw); //create test.csv and open
+  /*var chfile = open("../TestingHDF5/mathematica/bp11.csv",iomode.cw); //create test.csv and open
+  var SDfile = open("../TestingHDF5/mathematica/bpSD11.csv",iomode.cw); //create test.csv and open
+  var AMfile = open("../TestingHDF5/mathematica/bpAM11.csv",iomode.cw); //create test.csv and open
+  var PSfile = open("../TestingHDF5/mathematica/bpPS11.csv",iomode.cw); //create test.csv and open*/
+
+  var chfile = open("../TestingHDF5/mathematica/bp1.csv",iomode.cw); //create test.csv and open
+  var SDfile = open("../TestingHDF5/mathematica/bpSD1.csv",iomode.cw); //create test.csv and open
+  var AMfile = open("../TestingHDF5/mathematica/bpAM1.csv",iomode.cw); //create test.csv and open
+  var PSfile = open("../TestingHDF5/mathematica/bpPS1.csv",iomode.cw); //create test.csv and open
   var PSWritingChannel = PSfile.writer(); //open writing channel to test.csv
   var SDWritingChannel = SDfile.writer(); //open writing channel to test.csv
   var WritingChannel = chfile.writer(); //open writing channel to test.csv
@@ -373,7 +378,7 @@ proc main(){
   //dt = dt / period;
   writeln("initialized ring");
   //
-  /*
+
   fwd_orbit(pos, vel, AM, SD, PS, pot, integrator, N, dt, calcpar,WritingChannel,SDWritingChannel,AMWritingChannel,PSWritingChannel);
   WritingChannel.close();
   SDWritingChannel.close();
@@ -382,5 +387,5 @@ proc main(){
   PSfile.close();
   AMfile.close();
   SDfile.close();
-  chfile.close(); */
+  chfile.close();
 }

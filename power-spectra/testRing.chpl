@@ -9,25 +9,30 @@ const mau = 6.68458e-12; //meters to AU
 const kmkpc = 3.24078e-17;
 const kpcau = 2.063 * (10**8); //kpc to au
 const aukpc = 4.84814e-9;
-const secyr: real = 60*60*24*365.24; //seconds to years
+const yrsec: real = 60*60*24*365.24; //years to seconds
 const kpckm = 1.0 / kmkpc;
 const G = 6.67430e-11 * ((1e-3)**3); //G in km^3 / (kg * sec^2)
 //setup constants
 config const r0 = 15.0 * kpckm; // radius of ring, in km
 config const integrator = 0;   //set Integrator to LF
 config const N = 1000;//6000 set number of timesteps to equal total of 6 Gyr
-var dt = 1000000.0 * secyr; //set timestep to seconds per Myr
+var dt = 1000000.0 * yrsec; //set timestep to seconds per Myr
 config const offsetOption = 0; //0 = no radial offsets, 1 = using C generated random numbers, 2 = generating own random numbers
-config const Ne = 100; //number of particles in ring
+config const Ne = 10; //number of particles in ring
 config const nbins = 4;
 var pot = 3; //set galactic potential to that of NFW
 var period: real = 0.0;
 
 var k: int = 0; //record how many particles have been released
-var chfile = open("../mathematica/test2.csv",iomode.cw); //create test.csv and open
-var SDfile = open("../mathematica/SD2.csv",iomode.cw); //create test.csv and open
-var AMfile = open("../mathematica/AM2.csv",iomode.cw); //create test.csv and open
-var PSfile = open("../mathematica/PS2.csv",iomode.cw); //create test.csv and open
+var chfile = open("test2.csv",iomode.cw); //create test.csv and open
+var SDfile = open("SD2.csv",iomode.cw); //create test.csv and open
+var AMfile = open("AM2.csv",iomode.cw); //create test.csv and open
+var PSfile = open("PS2.csv",iomode.cw); //create test.csv and open
+/*var chfile = open("../TestingHDF5/mathematica/bp14.csv",iomode.cw); //create test.csv and open
+var SDfile = open("../TestingHDF5/mathematica/SD14.csv",iomode.cw); //create test.csv and open
+var AMfile = open("../TestingHDF5/mathematica/AM14.csv",iomode.cw); //create test.csv and open
+var PSfile = open("../TestingHDF5/mathematica/PS14.csv",iomode.cw); //create test.csv and open*/
+
 var PSWritingChannel = PSfile.writer(); //open writing channel to test.csv
 var SDWritingChannel = SDfile.writer(); //open writing channel to test.csv
 var WritingChannel = chfile.writer(); //open writing channel to test.csv
@@ -70,11 +75,11 @@ proc main () {
     writeln("period ",period);
     magVel = sqrt(len(acc) * r0) * period / r0;
     //magVel = 417.0 * period / r0;
-    //writeln(magVel);
+    writeln(magVel);
     calcpar[0] = calcpar[0] * (period ** 2)/ (r0 ** 3); //GM becomes dimensionless
-    //writeln("GM ", calcpar[0]);
+    writeln("GM ", calcpar[0]);
     dt = dt / period; //divide dt by period to make it dimensionless
-    //writeln("dt ",dt);
+    writeln("dt ",dt);
     //writeln("initializing param ",calcpar);
     //writeln("c1 " , calcpar[1], " c2 ",calcpar[2]," c3 ",calcpar[3], " c4 ",calcpar[4]);
   }
@@ -117,7 +122,7 @@ proc init_ring (pos, vel, AM, SD, PS, calcpar) {
     pos[j][1] = sin(posAngle);
     pos[j][2] = 0.0;
     velAngle = (pi / 2.0) - posAngle;
-    //magVel = sqrt(calcpar[0]); //unsure about this???
+    //magVel = sqrt(calcpar[0]);
     //magVel = sqrt(100000000000*Msun/r0);
     //vel[j][0] = magVel * cos(velAngle);
     //vel[j][1] = -1.0 * magVel * sin(velAngle);
@@ -140,11 +145,6 @@ proc init_ring (pos, vel, AM, SD, PS, calcpar) {
   pow_spec(pos,vel,PS);
   AMWritingChannel.write("\n");
 
-  //iterate through 2pi radians divided by 6000 particles.
-  //for each, multiply r0 by sin to get y, r0 by cosine to get x
-  //calculate magnitude of centripetal velocity vector for each particles
-  //angle velocity vector makes with axis is 90 - theta.
-  //multiple magnitude of velocity vector with sin and cosine of angle.
 }
 
 proc pow_spec (pos,vel, PS) {//gets computed at each timstep
@@ -385,24 +385,3 @@ proc loadOffsets(ref dvl, ref dvt, ref r1, ref r2, ReadingChannelv, ReadingChann
   }
   WritingChannel.write(dvl,",",dvt,",");
 }
-
-/*
-compute power spectra
-keep track of number of particles at all timestep
-average is the number of particles divided by number of bins
-
-if you do a noncircular orbit but spherical potential and without radial OFFSETS
- do you still get a cold thin stream?
-
-tRy example woithout a globular cluster, just stream particles in a ring.
-compare with pointmass potential and NFW triaxial. how does adding in triaxiality
-change how they move? */
-/*
-how to compute velocity dispersions?
-Velocity dispersion is standard deviation of velocities. This is
-calculated by dividing standard deviation of angular momentum
-For a given point in time:
-calculate angular momentum of each particle in stream
-find standard deviation of angular momentum
-divide standard deviation of angular momentum by r0
-*/

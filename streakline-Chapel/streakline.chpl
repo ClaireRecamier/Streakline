@@ -1,5 +1,5 @@
 use IO;
-
+//currently prints snapshot of stream at 6000th timestep
 const pi = 3.141592653589793;
 const Msun = 4 * pi**2; //AU
 const mau = 6.68458e-12; //meters to AU
@@ -13,7 +13,7 @@ config const mcli: real = 20000 * Msun; //initial mass of cluster
 config const mclf: real = 20000 * Msun; //final mass of cluster
 config const M = 1; //particles are released every Mth timestep
 config const Rcl = 20 * 0.001 * kpcau; //radius of plummer core
-var pot = 0; //set potential to that of pointmass
+var pot = 0; //0 = pointmass, 3 = NFW
 var Ne = ceil(N/M) : int; //number of particles released CHECK THIS
 var k: int = 0; //record how many particles have been released
 var dm = (mcli - mclf)/N; //amount of mass released per timesteps
@@ -232,6 +232,7 @@ proc force(pos,pot){
   if pot == 0 { //if using point mass potential
     r = len(pos);
     acc = (-1,-1,-1)*(1000000000 * Msun * pos)/dist**3; //assumes the sun stays at origin
+    //??dist
   }
   else if pot == 3 { //NFW triaxial potential
     //calcpar = [GM, c1, c2, c3, c4, rhalo]
